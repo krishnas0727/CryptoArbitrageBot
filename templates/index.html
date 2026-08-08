@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Crypto Arbitrage Bot</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+        ₿ Crypto Arbitrage
+    </div>
+
+
+    <nav>
+
+        <a href="/" class="active">
+            🏠 Dashboard
+        </a>
+
+        <a href="/prices">
+            📊 Live Prices
+        </a>
+
+        <a href="/arbitrage">
+            ⚡ Arbitrage
+        </a>
+
+        <a href="/trades">
+            🔄 Trade History
+        </a>
+
+        <a href="/settings">
+            ⚙ Settings
+        </a>
+
+    </nav>
+
+
+    <div class="bot-status">
+
+        <span class="dot"></span>
+
+        <span>
+            Bot Online
+        </span>
+
+    </div>
+
+</aside>
+
+
+
+<!-- =====================================================
+     AUTO TRADE POPUP
+===================================================== -->
+
+<div id="autoTradePopup"></div>
+
+
+
+<!-- =====================================================
+     MAIN CONTENT
+===================================================== -->
+
+<main class="main">
+
+
+    <!-- =================================================
+         HEADER
+    ================================================= -->
+
+    <header>
+
+        <div>
+
+            <h1>
+                Dashboard
+            </h1>
+
+            <p>
+                Crypto Arbitrage Bot Overview
+            </p>
+
+        </div>
+
+
+        <div id="time">
+            --:--:--
+        </div>
+
+    </header>
+
+
+
+    <!-- =================================================
+         SUMMARY CARDS
+    ================================================= -->
+
+    <section class="cards">
+
+
+        <!-- BALANCE -->
+
+        <div class="card">
+
+            <span>
+                Balance
+            </span>
+
+            <h2 id="balance">
+                10000.00
+            </h2>
+
+            <small>
+                USDT
+            </small>
+
+        </div>
+
+
+
+        <!-- PROFIT -->
+
+        <div class="card">
+
+            <span>
+                Total Profit
+            </span>
+
+            <h2 id="profit">
+                0.00
+            </h2>
+
+            <small>
+                USDT
+            </small>
+
+        </div>
+
+
+
+        <!-- TRADES -->
+
+        <div class="card">
+
+            <span>
+                Total Trades
+            </span>
+
+            <h2 id="trades">
+                0
+            </h2>
+
+            <small>
+                Paper Trades
+            </small>
+
+        </div>
+
+
+
+        <!-- BOT STATUS -->
+
+        <div class="card">
+
+            <span>
+                Bot Status
+            </span>
+
+            <h2 class="online">
+                ● Online
+            </h2>
+
+            <small>
+                Automatic Paper Trading
+            </small>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
+         CURRENT OPPORTUNITY
+    ================================================= -->
+
+    <section class="panel">
+
+
+        <div class="panel-title">
+
+            <div>
+
+                <h2>
+                    Current Opportunity
+                </h2>
+
+                <p>
+                    Latest arbitrage opportunity
+                </p>
+
+            </div>
+
+
+            <span id="opportunity">
+                Checking...
+            </span>
+
+        </div>
+
+
+
+        <div class="opportunity">
+
+
+            <!-- BUY -->
+
+            <div>
+
+                <small>
+                    BUY FROM
+                </small>
+
+                <h3 id="buyExchange">
+                    --
+                </h3>
+
+                <p id="buyPrice">
+                    -- USDT
+                </p>
+
+            </div>
+
+
+
+            <!-- ARROW -->
+
+            <div class="arrow">
+                →
+            </div>
+
+
+
+            <!-- SELL -->
+
+            <div>
+
+                <small>
+                    SELL ON
+                </small>
+
+                <h3 id="sellExchange">
+                    --
+                </h3>
+
+                <p id="sellPrice">
+                    -- USDT
+                </p>
+
+            </div>
+
+
+
+            <!-- PROFIT -->
+
+            <div>
+
+                <small>
+                    NET PROFIT
+                </small>
+
+                <h3 id="netProfit">
+                    -- USDT
+                </h3>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
+         FOOTER
+    ================================================= -->
+
+    <footer>
+
+        Crypto Arbitrage Bot
+        •
+        Paper Trading Mode
+
+    </footer>
+
+
+</main>
+
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script>
+
+
+/* =====================================================
+   GLOBAL
+===================================================== */
+
+/*
+   Last popup trade store pannuvom.
+
+   Same trade 5 seconds-ku once API call aagumbothu
+   duplicate popup varama prevent pannum.
+*/
+
+let lastPopupTradeKey = null;
+
+
+
+/* =====================================================
+   CLOCK
+===================================================== */
+
+function updateTime() {
+
+    const now = new Date();
+
+    document.getElementById("time").innerText =
+        now.toLocaleTimeString();
+
+}
+
+
+updateTime();
+
+
+setInterval(
+    updateTime,
+    1000
+);
+
+
+
+/* =====================================================
+   AUTO TRADE POPUP
+===================================================== */
+
+function showAutoTradePopup(trade) {
+
+    console.log(
+        "🔔 Showing Auto Trade Popup:",
+        trade
+    );
+
+
+    const popup =
+        document.getElementById(
+            "autoTradePopup"
+        );
+
+
+    if (!popup) {
+
+        console.error(
+            "❌ autoTradePopup element not found"
+        );
+
+        return;
+    }
+
+
+
+    /* ---------------------------------------------
+       TRADE VALUES
+    --------------------------------------------- */
+
+    const buyExchange =
+        trade.buy || "--";
+
+
+    const sellExchange =
+        trade.sell || "--";
+
+
+    const buyPrice =
+        Number(
+            trade.buy_price || 0
+        ).toFixed(2);
+
+
+    const sellPrice =
+        Number(
+            trade.sell_price || 0
+        ).toFixed(2);
+
+
+    const fees =
+        Number(
+            trade.fees || 0
+        ).toFixed(2);
+
+
+    const profit =
+        Number(
+            trade.profit || 0
+        ).toFixed(2);
+
+
+
+    /* ---------------------------------------------
+       POPUP HTML
+    --------------------------------------------- */
+
+    popup.innerHTML = `
+
+        <div class="auto-trade-popup">
+
+
+            <button
+                class="popup-close"
+                onclick="closeAutoTradePopup()">
+
+                ×
+
+            </button>
+
+
+
+            <div class="popup-icon">
+
+                🤖
+
+            </div>
+
+
+
+            <h2>
+
+                Automatic Trade Executed
+
+            </h2>
+
+
+
+            <p class="popup-success">
+
+                🟢 Paper Buy + Paper Sell completed
+
+            </p>
+
+
+
+            <div class="popup-trade-info">
+
+
+                <div class="popup-row">
+
+                    <span>
+                        Buy From
+                    </span>
+
+                    <strong>
+                        ${buyExchange}
+                    </strong>
+
+                </div>
+
+
+
+                <div class="popup-row">
+
+                    <span>
+                        Buy Price
+                    </span>
+
+                    <strong>
+                        ${buyPrice} USDT
+                    </strong>
+
+                </div>
+
+
+
+                <div class="popup-row">
+
+                    <span>
+                        Sell On
+                    </span>
+
+                    <strong>
+                        ${sellExchange}
+                    </strong>
+
+                </div>
+
+
+
+                <div class="popup-row">
+
+                    <span>
+                        Sell Price
+                    </span>
+
+                    <strong>
+                        ${sellPrice} USDT
+                    </strong>
+
+                </div>
+
+
+
+                <div class="popup-row">
+
+                    <span>
+                        Fees
+                    </span>
+
+                    <strong>
+                        ${fees} USDT
+                    </strong>
+
+                </div>
+
+
+
+                <div class="popup-row popup-profit">
+
+                    <span>
+                        Net Profit
+                    </span>
+
+                    <strong>
+                        +${profit} USDT
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="popup-footer">
+
+                Automatic paper trading is active
+
+            </div>
+
+
+        </div>
+
+    `;
+
+
+
+    /* ---------------------------------------------
+       SHOW
+    --------------------------------------------- */
+
+    popup.classList.add(
+        "popup-show"
+    );
+
+
+
+    /* ---------------------------------------------
+       AUTO CLOSE
+    --------------------------------------------- */
+
+    setTimeout(
+        closeAutoTradePopup,
+        6000
+    );
+
+}
+
+
+
+/* =====================================================
+   CLOSE POPUP
+===================================================== */
+
+function closeAutoTradePopup() {
+
+    const popup =
+        document.getElementById(
+            "autoTradePopup"
+        );
+
+
+    if (!popup) {
+
+        return;
+
+    }
+
+
+    popup.classList.remove(
+        "popup-show"
+    );
+
+}
+
+
+
+/* =====================================================
+   CHECK NEW AUTO TRADE
+===================================================== */
+
+function checkAutoTradePopup(market) {
+
+
+    /* ---------------------------------------------
+       No auto trade
+    --------------------------------------------- */
+
+    if (
+        !market.auto_trade
+    ) {
+
+        return;
+
+    }
+
+
+
+    /* ---------------------------------------------
+       Trade failed
+    --------------------------------------------- */
+
+    if (
+        !market.auto_trade.success
+    ) {
+
+        return;
+
+    }
+
+
+
+    /* ---------------------------------------------
+       Trade object
+    --------------------------------------------- */
+
+    const trade =
+        market.auto_trade.trade;
+
+
+    if (!trade) {
+
+        return;
+
+    }
+
+
+
+    /* ---------------------------------------------
+       CREATE UNIQUE TRADE KEY
+    --------------------------------------------- */
+
+    const tradeKey =
+
+        String(
+            trade.created_at || ""
+        )
+
+        + "_"
+
+        + String(
+            trade.buy || ""
+        )
+
+        + "_"
+
+        + String(
+            trade.sell || ""
+        )
+
+        + "_"
+
+        + String(
+            trade.buy_price || ""
+        )
+
+        + "_"
+
+        + String(
+            trade.sell_price || ""
+        )
+
+        + "_"
+
+        + String(
+            trade.profit || ""
+        );
+
+
+
+    console.log(
+        "Trade Key:",
+        tradeKey
+    );
+
+
+
+    /* ---------------------------------------------
+       SAME TRADE?
+    --------------------------------------------- */
+
+    if (
+        tradeKey === lastPopupTradeKey
+    ) {
+
+        console.log(
+            "⏭️ Same trade - popup skipped"
+        );
+
+        return;
+
+    }
+
+
+
+    /* ---------------------------------------------
+       NEW TRADE
+    --------------------------------------------- */
+
+    lastPopupTradeKey =
+        tradeKey;
+
+
+    console.log(
+        "🆕 New automatic trade detected"
+    );
+
+
+
+    /* ---------------------------------------------
+       SHOW POPUP
+    --------------------------------------------- */
+
+    showAutoTradePopup(
+        trade
+    );
+
+}
+
+
+
+/* =====================================================
+   LOAD MARKET DATA
+===================================================== */
+
+async function loadMarketData() {
+
+    try {
+
+
+        /* ---------------------------------------------
+           API REQUEST
+        --------------------------------------------- */
+
+        const response =
+            await fetch(
+                "/api/market"
+            );
+
+
+        const result =
+            await response.json();
+
+
+
+        /* ---------------------------------------------
+           API ERROR
+        --------------------------------------------- */
+
+        if (
+            !result.success
+        ) {
+
+            console.error(
+                "❌ Market API failed:",
+                result.message
+            );
+
+            return;
+
+        }
+
+
+
+        /* ---------------------------------------------
+           MARKET DATA
+        --------------------------------------------- */
+
+        const data =
+            result.data;
+
+
+
+        if (!data) {
+
+            return;
+
+        }
+
+
+
+        /* ---------------------------------------------
+           BUY EXCHANGE
+        --------------------------------------------- */
+
+        document.getElementById(
+            "buyExchange"
+        ).innerText =
+            data.buy_exchange || "--";
+
+
+
+        /* ---------------------------------------------
+           BUY PRICE
+        --------------------------------------------- */
+
+        document.getElementById(
+            "buyPrice"
+        ).innerText =
+
+            Number(
+                data.buy_price || 0
+            ).toFixed(2)
+
+            + " USDT";
+
+
+
+        /* ---------------------------------------------
+           SELL EXCHANGE
+        --------------------------------------------- */
+
+        document.getElementById(
+            "sellExchange"
+        ).innerText =
+            data.sell_exchange || "--";
+
+
+
+        /* ---------------------------------------------
+           SELL PRICE
+        --------------------------------------------- */
+
+        document.getElementById(
+            "sellPrice"
+        ).innerText =
+
+            Number(
+                data.sell_price || 0
+            ).toFixed(2)
+
+            + " USDT";
+
+
+
+        /* ---------------------------------------------
+           NET PROFIT
+        --------------------------------------------- */
+
+        document.getElementById(
+            "netProfit"
+        ).innerText =
+
+            Number(
+                data.net_profit || 0
+            ).toFixed(2)
+
+            + " USDT";
+
+
+
+        /* ---------------------------------------------
+           OPPORTUNITY STATUS
+        --------------------------------------------- */
+
+        const opportunity =
+            document.getElementById(
+                "opportunity"
+            );
+
+
+        if (
+            Number(
+                data.net_profit
+            ) > 0
+        ) {
+
+            opportunity.innerText =
+                "🟢 Opportunity Found";
+
+        }
+
+        else {
+
+            opportunity.innerText =
+                "No Opportunity";
+
+        }
+
+
+
+        /* ---------------------------------------------
+           AUTO TRADE POPUP
+        --------------------------------------------- */
+
+        checkAutoTradePopup(
+            result
+        );
+
+
+
+        /* ---------------------------------------------
+           LOAD TRADE SUMMARY
+        --------------------------------------------- */
+
+        await loadTradeSummary();
+
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "Dashboard error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   LOAD TRADE SUMMARY
+===================================================== */
+
+async function loadTradeSummary() {
+
+    try {
+
+
+        const response =
+            await fetch(
+                "/api/trades"
+            );
+
+
+        const result =
+            await response.json();
+
+
+
+        if (
+            !result.success
+        ) {
+
+            return;
+
+        }
+
+
+
+        const trades =
+            result.trades || [];
+
+
+
+        let totalProfit =
+            0;
+
+
+
+        /* ---------------------------------------------
+           CALCULATE PROFIT
+        --------------------------------------------- */
+
+        trades.forEach(
+            trade => {
+
+                /*
+                   New database.py returns:
+
+                   {
+                       id,
+                       buy,
+                       sell,
+                       buy_price,
+                       sell_price,
+                       fees,
+                       profit,
+                       created_at
+                   }
+                */
+
+                totalProfit +=
+                    Number(
+                        trade.profit || 0
+                    );
+
+            }
+        );
+
+
+
+        /* ---------------------------------------------
+           BALANCE
+        --------------------------------------------- */
+
+        const startingBalance =
+            10000;
+
+
+        const balance =
+            startingBalance
+            +
+            totalProfit;
+
+
+
+        document.getElementById(
+            "balance"
+        ).innerText =
+            balance.toFixed(2);
+
+
+
+        /* ---------------------------------------------
+           TOTAL PROFIT
+        --------------------------------------------- */
+
+        document.getElementById(
+            "profit"
+        ).innerText =
+            totalProfit.toFixed(2);
+
+
+
+        /* ---------------------------------------------
+           TOTAL TRADES
+        --------------------------------------------- */
+
+        document.getElementById(
+            "trades"
+        ).innerText =
+            trades.length;
+
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "Trade summary error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   INITIAL LOAD
+===================================================== */
+
+loadMarketData();
+
+
+
+/* =====================================================
+   AUTO REFRESH
+===================================================== */
+
+/*
+   Every 5 seconds:
+
+   1. Get latest prices
+   2. Check arbitrage
+   3. Backend checks auto trade
+   4. New trade -> popup
+   5. Same trade -> no popup
+*/
+
+setInterval(
+    loadMarketData,
+    5000
+);
+
+</script>
+
+
+</body>
+
+</html>

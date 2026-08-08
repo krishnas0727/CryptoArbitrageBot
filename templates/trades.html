@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Trade History</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<aside class="sidebar">
+
+    <div class="logo">
+        ₿ Crypto Arbitrage
+    </div>
+
+    <nav>
+
+        <a href="/">
+            🏠 Dashboard
+        </a>
+
+        <a href="/prices">
+            📊 Live Prices
+        </a>
+
+        <a href="/arbitrage">
+            ⚡ Arbitrage
+        </a>
+
+        <a href="/trades" class="active">
+            🔄 Trade History
+        </a>
+
+        <a href="/settings">
+            ⚙ Settings
+        </a>
+
+    </nav>
+
+    <div class="bot-status">
+
+        <span class="dot"></span>
+        <span>Bot Online</span>
+
+    </div>
+
+</aside>
+
+
+<main class="main">
+
+    <header>
+
+        <div>
+
+            <h1>Trade History</h1>
+
+            <p>
+                Automatic paper trades only
+            </p>
+
+        </div>
+
+        <div id="time">
+            --:--:--
+        </div>
+
+    </header>
+
+
+    <section class="panel">
+
+        <div class="auto-status">
+
+            <span class="dot"></span>
+
+            <span>
+                Automatic Trading Active
+            </span>
+
+        </div>
+
+
+        <div style="overflow-x:auto; margin-top:25px;">
+
+            <table class="trade-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Buy</th>
+
+                        <th>Sell</th>
+
+                        <th>Buy Price</th>
+
+                        <th>Sell Price</th>
+
+                        <th>Fees</th>
+
+                        <th>Profit</th>
+
+                        <th>Time</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="tradeTable">
+
+                    <tr>
+
+                        <td colspan="7"
+                            style="text-align:center; padding:30px;">
+
+                            Waiting for automatic trades...
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+
+/* =================================
+   CLOCK
+================================= */
+
+function updateTime() {
+
+    document.getElementById("time").innerText =
+        new Date().toLocaleTimeString();
+
+}
+
+updateTime();
+
+setInterval(updateTime, 1000);
+
+
+/* =================================
+   LOAD TRADE HISTORY
+================================= */
+
+async function loadTrades() {
+
+    try {
+
+        const response =
+            await fetch("/api/trades");
+
+        const result =
+            await response.json();
+
+
+        if (!result.success) {
+
+            return;
+
+        }
+
+
+        const table =
+            document.getElementById("tradeTable");
+
+
+        table.innerHTML = "";
+
+
+        if (result.trades.length === 0) {
+
+            table.innerHTML = `
+
+                <tr>
+
+                    <td colspan="7"
+                        style="
+                            text-align:center;
+                            padding:40px;
+                            color:#94a3b8;
+                        ">
+
+                        No automatic trades yet.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        result.trades.forEach(trade => {
+
+
+            const row =
+                document.createElement("tr");
+
+
+            const profit =
+                Number(trade.profit);
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${trade.buy_exchange}
+                </td>
+
+                <td>
+                    ${trade.sell_exchange}
+                </td>
+
+                <td>
+                    ${Number(trade.buy_price).toFixed(2)}
+                    USDT
+                </td>
+
+                <td>
+                    ${Number(trade.sell_price).toFixed(2)}
+                    USDT
+                </td>
+
+                <td>
+                    ${Number(trade.fees).toFixed(2)}
+                    USDT
+                </td>
+
+                <td class="profit">
+                    ${profit.toFixed(2)}
+                    USDT
+                </td>
+
+                <td>
+                    ${trade.created_at}
+                </td>
+
+            `;
+
+
+            table.appendChild(row);
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Trade history error:",
+            error
+        );
+
+    }
+
+}
+
+
+loadTrades();
+
+
+/*
+   Refresh every 5 seconds
+   Auto trade save aana immediately
+   history update aagum.
+*/
+
+setInterval(
+    loadTrades,
+    5000
+);
+
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Settings - Crypto Arbitrage Bot</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+        ₿ Crypto Arbitrage
+    </div>
+
+
+    <nav>
+
+        <a href="/">
+            🏠 Dashboard
+        </a>
+
+        <a href="/prices">
+            📊 Live Prices
+        </a>
+
+        <a href="/arbitrage">
+            ⚡ Arbitrage
+        </a>
+
+        <a href="/trades">
+            🔄 Trade History
+        </a>
+
+        <a href="/settings" class="active">
+            ⚙ Settings
+        </a>
+
+    </nav>
+
+
+    <div class="bot-status">
+
+        <span class="dot"></span>
+
+        <span>
+            Bot Online
+        </span>
+
+    </div>
+
+</aside>
+
+
+
+<!-- =====================================================
+     MAIN CONTENT
+===================================================== -->
+
+<main class="main">
+
+
+    <!-- HEADER -->
+
+    <header>
+
+        <div>
+
+            <h1>
+                Settings
+            </h1>
+
+            <p>
+                Configure your automated paper trading bot
+            </p>
+
+        </div>
+
+
+        <div class="settings-status">
+
+            <span class="status-dot"></span>
+
+            <span>
+                System Online
+            </span>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =================================================
+         SETTINGS GRID
+    ================================================= -->
+
+    <section class="settings-grid">
+
+
+        <!-- =================================================
+             AUTO TRADE CARD
+        ================================================= -->
+
+        <div class="settings-card">
+
+
+            <div class="settings-card-header">
+
+                <div class="settings-icon auto-icon">
+                    🤖
+                </div>
+
+                <div>
+
+                    <h2>
+                        Automatic Trading
+                    </h2>
+
+                    <p>
+                        Automatically execute profitable
+                        paper trades
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="setting-divider"></div>
+
+
+
+            <div class="setting-row">
+
+
+                <div>
+
+                    <strong>
+                        Auto Trade
+                    </strong>
+
+                    <small id="autoTradeDescription">
+                        Automatic trading is enabled
+                    </small>
+
+                </div>
+
+
+                <!-- TOGGLE -->
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="autoTrade"
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+
+
+            <div class="auto-status-box">
+
+                <span
+                    class="status-indicator"
+                    id="autoStatusDot">
+                </span>
+
+                <span id="autoStatusText">
+                    Checking status...
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             PROFIT SETTINGS
+        ================================================= -->
+
+        <div class="settings-card">
+
+
+            <div class="settings-card-header">
+
+                <div class="settings-icon profit-icon">
+                    💰
+                </div>
+
+                <div>
+
+                    <h2>
+                        Profit Configuration
+                    </h2>
+
+                    <p>
+                        Set the minimum profit required
+                        before a trade is executed
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="setting-divider"></div>
+
+
+
+            <label class="input-label">
+
+                Minimum Profit
+
+            </label>
+
+
+            <div class="profit-input-wrapper">
+
+                <input
+                    type="number"
+                    id="minProfit"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.50"
+                >
+
+                <span>
+                    USDT
+                </span>
+
+            </div>
+
+
+            <small class="input-help">
+
+                Trades below this profit amount
+                will be skipped automatically.
+
+            </small>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             TRADING MODE
+        ================================================= -->
+
+        <div class="settings-card">
+
+
+            <div class="settings-card-header">
+
+                <div class="settings-icon mode-icon">
+                    📊
+                </div>
+
+                <div>
+
+                    <h2>
+                        Trading Mode
+                    </h2>
+
+                    <p>
+                        Current execution environment
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="setting-divider"></div>
+
+
+
+            <div class="mode-box">
+
+                <div class="mode-left">
+
+                    <div class="mode-symbol">
+                        🧪
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Paper Trading
+                        </strong>
+
+                        <small>
+                            No real money is being traded
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <span class="mode-badge">
+                    ACTIVE
+                </span>
+
+            </div>
+
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             EXCHANGE SETTINGS
+        ================================================= -->
+
+        <div class="settings-card">
+
+
+            <div class="settings-card-header">
+
+                <div class="settings-icon exchange-icon">
+                    🌐
+                </div>
+
+                <div>
+
+                    <h2>
+                        Supported Exchanges
+                    </h2>
+
+                    <p>
+                        Exchanges used for arbitrage monitoring
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="setting-divider"></div>
+
+
+
+            <div class="exchange-list">
+
+
+                <div class="exchange-item">
+
+                    <span class="exchange-logo">
+                        B
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Binance
+                        </strong>
+
+                        <small>
+                            BTC / USDT
+                        </small>
+
+                    </div>
+
+                    <span class="exchange-active">
+                        ●
+                    </span>
+
+                </div>
+
+
+
+                <div class="exchange-item">
+
+                    <span class="exchange-logo">
+                        B
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Bybit
+                        </strong>
+
+                        <small>
+                            BTC / USDT
+                        </small>
+
+                    </div>
+
+                    <span class="exchange-active">
+                        ●
+                    </span>
+
+                </div>
+
+
+
+                <div class="exchange-item">
+
+                    <span class="exchange-logo">
+                        K
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Kraken
+                        </strong>
+
+                        <small>
+                            BTC / USDT
+                        </small>
+
+                    </div>
+
+                    <span class="exchange-active">
+                        ●
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+
+    <!-- =================================================
+         SAVE SECTION
+    ================================================= -->
+
+    <section class="save-panel">
+
+
+        <div>
+
+            <div class="save-title">
+
+                <span class="save-icon">
+                    ⚙
+                </span>
+
+                <div>
+
+                    <h2>
+                        Bot Configuration
+                    </h2>
+
+                    <p id="saveMessage">
+                        Changes will apply immediately to
+                        automatic paper trading.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="save-button"
+            id="saveSettings"
+        >
+
+            <span>
+                💾
+            </span>
+
+            Save Settings
+
+        </button>
+
+
+    </section>
+
+
+
+    <!-- =================================================
+         CURRENT CONFIGURATION
+    ================================================= -->
+
+    <section class="config-panel">
+
+
+        <div class="config-header">
+
+            <div>
+
+                <h2>
+                    Current Configuration
+                </h2>
+
+                <p>
+                    Live bot configuration
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="config-items">
+
+
+            <div class="config-item">
+
+                <span>
+                    Auto Trading
+                </span>
+
+                <strong id="currentAutoTrade">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="config-item">
+
+                <span>
+                    Minimum Profit
+                </span>
+
+                <strong id="currentMinProfit">
+                    --
+                </strong>
+
+            </div>
+
+
+            <div class="config-item">
+
+                <span>
+                    Trading Mode
+                </span>
+
+                <strong>
+                    Paper Trading
+                </strong>
+
+            </div>
+
+
+            <div class="config-item">
+
+                <span>
+                    Trading Pair
+                </span>
+
+                <strong>
+                    BTC / USDT
+                </strong>
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+
+    <!-- =================================================
+         FOOTER
+    ================================================= -->
+
+    <footer>
+
+        Crypto Arbitrage Bot
+        •
+        Paper Trading Mode
+
+    </footer>
+
+
+</main>
+
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script>
+
+
+// =====================================================
+// ELEMENTS
+// =====================================================
+
+const autoTrade =
+    document.getElementById("autoTrade");
+
+const minProfit =
+    document.getElementById("minProfit");
+
+const saveButton =
+    document.getElementById("saveSettings");
+
+const saveMessage =
+    document.getElementById("saveMessage");
+
+const autoStatusText =
+    document.getElementById("autoStatusText");
+
+const autoStatusDot =
+    document.getElementById("autoStatusDot");
+
+const autoTradeDescription =
+    document.getElementById(
+        "autoTradeDescription"
+    );
+
+const currentAutoTrade =
+    document.getElementById(
+        "currentAutoTrade"
+    );
+
+const currentMinProfit =
+    document.getElementById(
+        "currentMinProfit"
+    );
+
+
+// =====================================================
+// LOAD SETTINGS
+// =====================================================
+
+async function loadSettings() {
+
+    try {
+
+        const response =
+            await fetch("/api/settings");
+
+        const result =
+            await response.json();
+
+
+        if (
+            !result.success
+        ) {
+
+            throw new Error(
+                "Unable to load settings"
+            );
+
+        }
+
+
+        const settings =
+            result.settings;
+
+
+        autoTrade.checked =
+            Boolean(
+                settings.auto_trade
+            );
+
+
+        minProfit.value =
+            settings.min_profit;
+
+
+        updateAutoTradeUI(
+            settings.auto_trade
+        );
+
+
+        updateCurrentConfiguration(
+            settings
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Settings Load Error:",
+            error
+        );
+
+        saveMessage.innerText =
+            "❌ Unable to load settings.";
+
+    }
+
+}
+
+
+// =====================================================
+// UPDATE AUTO TRADE UI
+// =====================================================
+
+function updateAutoTradeUI(
+    enabled
+) {
+
+    if (enabled) {
+
+        autoStatusText.innerText =
+            "Automatic trading is ACTIVE";
+
+        autoTradeDescription.innerText =
+            "The bot can automatically execute profitable paper trades.";
+
+        autoStatusDot.classList.add(
+            "active"
+        );
+
+    }
+
+    else {
+
+        autoStatusText.innerText =
+            "Automatic trading is OFF";
+
+        autoTradeDescription.innerText =
+            "The bot will monitor opportunities but will not execute trades.";
+
+        autoStatusDot.classList.remove(
+            "active"
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// UPDATE CURRENT CONFIGURATION
+// =====================================================
+
+function updateCurrentConfiguration(
+    settings
+) {
+
+    currentAutoTrade.innerText =
+        settings.auto_trade
+        ? "ENABLED"
+        : "DISABLED";
+
+
+    currentAutoTrade.className =
+        settings.auto_trade
+        ? "config-enabled"
+        : "config-disabled";
+
+
+    currentMinProfit.innerText =
+        Number(
+            settings.min_profit
+        ).toFixed(2)
+        + " USDT";
+
+}
+
+
+// =====================================================
+// TOGGLE EVENT
+// =====================================================
+
+autoTrade.addEventListener(
+    "change",
+    function () {
+
+        updateAutoTradeUI(
+            autoTrade.checked
+        );
+
+    }
+);
+
+
+// =====================================================
+// SAVE SETTINGS
+// =====================================================
+
+saveButton.addEventListener(
+    "click",
+    async function () {
+
+
+        const profitValue =
+            Number(
+                minProfit.value
+            );
+
+
+        if (
+            Number.isNaN(profitValue)
+            ||
+            profitValue < 0
+        ) {
+
+            saveMessage.innerText =
+                "❌ Please enter a valid minimum profit.";
+
+            return;
+
+        }
+
+
+        saveButton.disabled =
+            true;
+
+        saveButton.innerHTML =
+            "⏳ Saving...";
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    "/api/settings",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            auto_trade:
+                                autoTrade.checked,
+
+                            min_profit:
+                                profitValue
+
+                        })
+
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (
+                !result.success
+            ) {
+
+                throw new Error(
+                    result.message ||
+                    "Failed to save settings"
+                );
+
+            }
+
+
+            // Update UI
+
+            updateAutoTradeUI(
+                result.settings.auto_trade
+            );
+
+
+            updateCurrentConfiguration(
+                result.settings
+            );
+
+
+            saveMessage.innerText =
+                "✅ Settings saved successfully.";
+
+
+            saveMessage.classList.add(
+                "save-success"
+            );
+
+
+            // Button success state
+
+            saveButton.innerHTML =
+                "✓ Saved";
+
+
+            setTimeout(
+                () => {
+
+                    saveButton.innerHTML =
+                        "💾 Save Settings";
+
+                    saveMessage.innerText =
+                        "Changes will apply immediately to automatic paper trading.";
+
+                    saveMessage.classList.remove(
+                        "save-success"
+                    );
+
+                },
+                2500
+            );
+
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Settings Save Error:",
+                error
+            );
+
+
+            saveMessage.innerText =
+                "❌ " + error.message;
+
+        }
+
+
+        finally {
+
+            saveButton.disabled =
+                false;
+
+        }
+
+    }
+);
+
+
+// =====================================================
+// INITIAL LOAD
+// =====================================================
+
+loadSettings();
+
+</script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Arbitrage</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<aside class="sidebar">
+
+    <div class="logo">
+        ₿ Crypto Arbitrage
+    </div>
+
+    <nav>
+
+        <a href="/">
+            🏠 Dashboard
+        </a>
+
+        <a href="/prices">
+            📊 Live Prices
+        </a>
+
+        <a href="/arbitrage" class="active">
+            ⚡ Arbitrage
+        </a>
+
+        <a href="/trades">
+            🔄 Trade History
+        </a>
+
+        <a href="/settings">
+            ⚙ Settings
+        </a>
+
+    </nav>
+
+    <div class="bot-status">
+
+        <span class="dot"></span>
+        <span>Bot Online</span>
+
+    </div>
+
+</aside>
+
+
+<main class="main">
+
+    <header>
+
+        <div>
+
+            <h1>Arbitrage</h1>
+
+            <p>
+                Current arbitrage opportunity
+            </p>
+
+        </div>
+
+        <div id="time">
+            --:--:--
+        </div>
+
+    </header>
+
+
+    <!-- ARBITRAGE PANEL -->
+
+    <section class="panel">
+
+        <div class="opportunity">
+
+            <div>
+
+                <small>BUY FROM</small>
+
+                <h3 id="buy">
+                    --
+                </h3>
+
+                <p id="buyPrice">
+                    -- USDT
+                </p>
+
+            </div>
+
+
+            <div class="arrow">
+                →
+            </div>
+
+
+            <div>
+
+                <small>SELL ON</small>
+
+                <h3 id="sell">
+                    --
+                </h3>
+
+                <p id="sellPrice">
+                    -- USDT
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <small>PRICE DIFFERENCE</small>
+
+                <h3 id="difference">
+                    -- USDT
+                </h3>
+
+            </div>
+
+
+            <div>
+
+                <small>NET PROFIT</small>
+
+                <h3 id="profit">
+                    -- USDT
+                </h3>
+
+            </div>
+
+        </div>
+
+
+        <!-- TRADE BUTTON -->
+
+        <button
+            id="tradeButton"
+            onclick="executeTrade()"
+            style="
+                width:100%;
+                margin-top:30px;
+                padding:16px;
+                border:none;
+                border-radius:10px;
+                background:#2563eb;
+                color:white;
+                font-size:17px;
+                font-weight:600;
+                cursor:pointer;
+            "
+        >
+
+            Execute Paper Trade
+
+        </button>
+
+
+        <div
+            id="message"
+            style="
+                margin-top:15px;
+                text-align:center;
+                font-weight:600;
+            "
+        ></div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+/* ==============================
+   CLOCK
+============================== */
+
+function updateTime() {
+
+    document.getElementById("time").innerText =
+        new Date().toLocaleTimeString();
+
+}
+
+updateTime();
+
+setInterval(updateTime, 1000);
+
+
+/* ==============================
+   LOAD MARKET
+============================== */
+
+async function loadArbitrage() {
+
+    try {
+
+        const response =
+            await fetch("/api/market");
+
+        const result =
+            await response.json();
+
+        if (!result.success) {
+
+            console.log(result.message);
+
+            return;
+
+        }
+
+        const data =
+            result.data;
+
+
+        document.getElementById("buy").innerText =
+            data.buy_exchange;
+
+
+        document.getElementById("sell").innerText =
+            data.sell_exchange;
+
+
+        document.getElementById("buyPrice").innerText =
+            Number(data.buy_price).toFixed(2)
+            + " USDT";
+
+
+        document.getElementById("sellPrice").innerText =
+            Number(data.sell_price).toFixed(2)
+            + " USDT";
+
+
+        document.getElementById("difference").innerText =
+            Number(data.difference).toFixed(2)
+            + " USDT";
+
+
+        document.getElementById("profit").innerText =
+            Number(data.net_profit).toFixed(2)
+            + " USDT";
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Market error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ==============================
+   EXECUTE PAPER TRADE
+============================== */
+
+async function executeTrade() {
+
+    const button =
+        document.getElementById("tradeButton");
+
+    const message =
+        document.getElementById("message");
+
+
+    button.disabled = true;
+
+    button.innerText =
+        "Executing...";
+
+
+    message.innerText = "";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/trade",
+                {
+                    method: "POST"
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (result.success) {
+
+            message.style.color =
+                "#22c55e";
+
+            message.innerText =
+                "✅ Paper trade executed and saved!";
+
+
+            setTimeout(
+                () => {
+
+                    window.location.href =
+                        "/trades";
+
+                },
+                1000
+            );
+
+        }
+
+        else {
+
+            message.style.color =
+                "#ef4444";
+
+            message.innerText =
+                "❌ " +
+                (result.message ||
+                 "Trade failed.");
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        message.style.color =
+            "#ef4444";
+
+        message.innerText =
+            "❌ Unable to execute trade.";
+
+    }
+
+
+    button.disabled = false;
+
+    button.innerText =
+        "Execute Paper Trade";
+
+}
+
+
+/* ==============================
+   START
+============================== */
+
+loadArbitrage();
+
+setInterval(
+    loadArbitrage,
+    5000
+);
+
+</script>
+
+</body>
+
+</html>
