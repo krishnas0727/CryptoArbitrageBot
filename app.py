@@ -332,26 +332,8 @@ def market_data():
     auto_trade_result = None
 
     if config.AUTO_TRADE_ENABLED:
-
         if data["net_profit"] >= config.MIN_PROFIT:
-
-            current_pair = (
-                data["buy_exchange"],
-                data["sell_exchange"]
-            )
-
-            if current_pair != last_auto_trade_pair:
-
-                auto_trade_result = execute_paper_trade(data)
-
-                if auto_trade_result["success"]:
-                    last_auto_trade_pair = current_pair
-
-        else:
-            last_auto_trade_pair = None
-
-    else:
-        last_auto_trade_pair = None
+            auto_trade_result = execute_paper_trade(data)
 
 
     portfolio = get_portfolio()
