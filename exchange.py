@@ -155,6 +155,21 @@ def get_direct_price(name, symbol=SYMBOL):
                 continue
 
     elif name.lower() == "bybit":
+        # 1. Try Bybit Kline V5 API (unblocked on cloud servers)
+        for base_url in ["https://api.bybit.com", "https://api.bytick.com"]:
+            try:
+                url = f"{base_url}/v5/market/kline?category=spot&symbol={clean_sym}&interval=1&limit=1"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                res = json.loads(urllib.request.urlopen(req, context=ctx, timeout=6).read())
+                k_list = res.get('result', {}).get('list', [])
+                if k_list and len(k_list[0]) >= 5:
+                    close_price = float(k_list[0][4])
+                    if close_price > 0:
+                        return close_price
+            except Exception:
+                continue
+
+        # 2. Try Bybit Tickers V5 API
         for base_url in ["https://api.bybit.com", "https://api.bytick.com"]:
             try:
                 url = f"{base_url}/v5/market/tickers?category=spot&symbol={clean_sym}"
@@ -165,6 +180,16 @@ def get_direct_price(name, symbol=SYMBOL):
                     return float(tickers[0]['lastPrice'])
             except Exception:
                 continue
+
+        # 3. Gate.io Fallback for spot price
+        try:
+            url = f"https://api.gateio.ws/api/v4/spot/tickers?currency_pair={clean_sym[:3]}_{clean_sym[3:]}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            res = json.loads(urllib.request.urlopen(req, context=ctx, timeout=6).read())
+            if res and isinstance(res, list) and 'last' in res[0]:
+                return float(res[0]['last'])
+        except Exception:
+            pass
 
     elif name.lower() == "coinbase":
         base_coin = symbol.split('/')[0]
