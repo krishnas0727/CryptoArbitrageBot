@@ -25,9 +25,9 @@ TRADING_MODE = "PAPER"         # "PAPER", "LIVE", or "TESTNET"
 # FEES (FLAT FALLBACK / TRANSFER)
 # ==========================================
 
-BUY_FEE = 0.50
-SELL_FEE = 0.50
-TRANSFER_FEE = 0.20
+BUY_FEE = 0.05
+SELL_FEE = 0.05
+TRANSFER_FEE = 0.00
 
 
 # ==========================================
@@ -43,7 +43,7 @@ AUTO_TRADE_ENABLED = True
 # Minimum net profit required
 # before automatic paper trade
 
-MIN_PROFIT = 0.10
+MIN_PROFIT = 0.01
 AUTO_TRADE_COOLDOWN = 10
 REFRESH_INTERVAL = 2
 
