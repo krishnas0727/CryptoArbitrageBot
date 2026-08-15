@@ -43,20 +43,9 @@ AUTO_TRADE_ENABLED = True
 # Minimum net profit required
 # before automatic paper trade
 
-MIN_PROFIT = 0.50
-
-
-# Same exchange pair-ku
-# repeated trade prevent panna cooldown
-
-AUTO_TRADE_COOLDOWN = 30
-
-
-# ==========================================
-# MARKET REFRESH
-# ==========================================
-
-REFRESH_INTERVAL = 5
+MIN_PROFIT = 0.10
+AUTO_TRADE_COOLDOWN = 10
+REFRESH_INTERVAL = 2
 
 
 # ==========================================

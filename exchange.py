@@ -205,6 +205,30 @@ def get_direct_price(name, symbol=SYMBOL):
     return None
 
 
+import concurrent.futures
+
+def fetch_single_exchange_price(name_and_exchange):
+    name, exchange = name_and_exchange
+    fetched_price = None
+
+    # 1. Direct REST Endpoint Fast-Track (fastest for cloud servers)
+    direct_p = get_direct_price(name, SYMBOL)
+    if direct_p and direct_p > 0:
+        fetched_price = direct_p
+
+    # 2. CCXT Fallback if direct REST endpoint didn't return
+    if fetched_price is None:
+        try:
+            ticker = exchange.fetch_ticker(SYMBOL)
+            last_price = ticker.get("last")
+            if last_price and float(last_price) > 0:
+                fetched_price = float(last_price)
+        except Exception:
+            pass
+
+    return name, fetched_price
+
+
 # ============================================================
 # GET LIVE PRICES
 # ============================================================
@@ -213,33 +237,15 @@ def get_live_prices():
 
     prices = {}
 
-    for name, exchange in exchanges.items():
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        results = list(executor.map(fetch_single_exchange_price, exchanges.items()))
 
-        fetched_price = None
-
-        # 1. Try standard CCXT fetch
-        try:
-            ticker = exchange.fetch_ticker(SYMBOL)
-            last_price = ticker.get("last")
-            if last_price and float(last_price) > 0:
-                fetched_price = float(last_price)
-        except Exception as e:
-            # Silent fallback to direct REST API if CCXT is blocked on cloud server IP
-            pass
-
-        # 2. Direct HTTP Fallback if CCXT failed or was geo-blocked
-        if fetched_price is None:
-            direct_p = get_direct_price(name, SYMBOL)
-            if direct_p and direct_p > 0:
-                fetched_price = direct_p
-                print(f"🌐 {name} (Direct Endpoint Fallback): {fetched_price:.2f} USDT")
-
-        if fetched_price is None:
+    for name, fetched_price in results:
+        if fetched_price and fetched_price > 0:
+            prices[name] = round(fetched_price, 2)
+            print(f"📊 {name}: {prices[name]:.2f} USDT")
+        else:
             print(f"⚠️ {name}: Price unavailable")
-            continue
-
-        prices[name] = round(fetched_price, 2)
-        print(f"📊 {name}: {prices[name]:.2f} USDT")
 
     return prices
 
