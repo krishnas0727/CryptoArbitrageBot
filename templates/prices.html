@@ -110,9 +110,9 @@
 
         <div class="card">
 
-            <span>Kraken</span>
+            <span>Coinbase</span>
 
-            <h2 id="kraken">
+            <h2 id="coinbase">
                 --
             </h2>
 
@@ -157,16 +157,17 @@ async function loadPrices() {
             result.data;
 
 
-        document.getElementById("binance").innerText =
-            Number(data.prices.Binance).toFixed(2);
+        if (data.prices.Binance) {
+            document.getElementById("binance").innerText = Number(data.prices.Binance).toFixed(2);
+        }
 
+        if (data.prices.Bybit) {
+            document.getElementById("bybit").innerText = Number(data.prices.Bybit).toFixed(2);
+        }
 
-        document.getElementById("bybit").innerText =
-            Number(data.prices.Bybit).toFixed(2);
-
-
-        document.getElementById("kraken").innerText =
-            Number(data.prices.Kraken).toFixed(2);
+        if (data.prices.Coinbase || data.prices.Kraken) {
+            document.getElementById("coinbase").innerText = Number(data.prices.Coinbase || data.prices.Kraken).toFixed(2);
+        }
 
     }
 

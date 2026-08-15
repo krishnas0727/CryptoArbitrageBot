@@ -185,12 +185,12 @@ async function loadMarketData() {
 
 
         if (
-            data.prices.Kraken !== undefined &&
-            document.getElementById("krakenPrice")
+            (data.prices.Coinbase !== undefined || data.prices.Kraken !== undefined) &&
+            document.getElementById("coinbasePrice")
         ) {
 
-            document.getElementById("krakenPrice").innerText =
-                formatPrice(data.prices.Kraken);
+            document.getElementById("coinbasePrice").innerText =
+                formatPrice(data.prices.Coinbase || data.prices.Kraken);
         }
 
 

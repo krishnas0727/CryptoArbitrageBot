@@ -1,4 +1,4 @@
-from exchange import get_live_prices
+from exchange import get_live_prices, execute_live_real_trade
 from paper_trade import PaperTrader
 from database import create_database, save_trade
 
@@ -96,204 +96,119 @@ def analyze_market():
 
 
 # ============================================================
-# AUTOMATIC PAPER TRADE
+# EXECUTE TRADE (ROUTER: PAPER vs LIVE)
 # ============================================================
 
-def execute_paper_trade(market_data):
+def execute_paper_trade(market_data, custom_amount=None):
 
     global last_trade_time
     global last_trade_key
 
-    # --------------------------------------------------------
-    # Market data check
-    # --------------------------------------------------------
-
     if not market_data:
-
         return {
             "success": False,
             "message": "Market data unavailable."
         }
 
-
-    # --------------------------------------------------------
-    # AUTO TRADE CHECK
-    # --------------------------------------------------------
-
-    if not config.AUTO_TRADE_ENABLED:
-
+    if market_data["net_profit"] < config.MIN_PROFIT:
         return {
             "success": False,
-            "message":
-                "Automatic trading is disabled."
+            "message": f"Execution skipped: Profit (${market_data['net_profit']:.2f}) is below minimum requirement ${config.MIN_PROFIT:.2f} USDT."
         }
-
-
-    # --------------------------------------------------------
-    # MINIMUM PROFIT CHECK
-    # --------------------------------------------------------
-
-    if (
-        market_data["net_profit"]
-        < config.MIN_PROFIT
-    ):
-
-        return {
-
-            "success": False,
-
-            "message":
-                f"Profit "
-                f"{market_data['net_profit']:.2f} "
-                f"is below minimum "
-                f"{config.MIN_PROFIT:.2f} USDT."
-
-        }
-
-
-    # --------------------------------------------------------
-    # CURRENT TIME
-    # --------------------------------------------------------
 
     current_time = time.time()
-
-
-    # --------------------------------------------------------
-    # CREATE OPPORTUNITY KEY
-    # --------------------------------------------------------
-
     trade_key = (
-
         market_data["buy_exchange"],
-
         market_data["sell_exchange"]
-
     )
 
-
-    # --------------------------------------------------------
-    # COOLDOWN CHECK
-    # --------------------------------------------------------
-
     if (
-
         trade_key == last_trade_key
-
-        and
-
-        current_time - last_trade_time
-        < config.AUTO_TRADE_COOLDOWN
-
+        and current_time - last_trade_time < config.AUTO_TRADE_COOLDOWN
+        and not custom_amount
     ):
-
-        remaining = int(
-
-            config.AUTO_TRADE_COOLDOWN
-            -
-            (
-                current_time
-                -
-                last_trade_time
-            )
-
-        )
-
+        remaining = int(config.AUTO_TRADE_COOLDOWN - (current_time - last_trade_time))
         return {
-
             "success": False,
-
-            "message":
-                f"Cooldown active. "
-                f"Wait {remaining}s."
-
+            "message": f"Cooldown active. Wait {remaining}s."
         }
-
-
-    # --------------------------------------------------------
-    # CREATE DATABASE
-    # --------------------------------------------------------
 
     create_database()
 
+    trading_mode = getattr(config, "TRADING_MODE", "PAPER")
 
-    # --------------------------------------------------------
-    # CREATE PAPER TRADER
-    # --------------------------------------------------------
+    # ========================================================
+    # LIVE REAL TRADING MODE
+    # ========================================================
+    if trading_mode == "LIVE":
+        print("🔴 EXECUTING LIVE REAL TRADE...")
+        live_res = execute_live_real_trade(
+            market_data["buy_exchange"],
+            market_data["sell_exchange"],
+            market_data["buy_price"],
+            market_data["sell_price"],
+            trade_amount=custom_amount or getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0)
+        )
 
-    trader = PaperTrader(
+        if live_res.get("success"):
+            trade = live_res["trade"]
+            save_trade(trade)
 
-        balance=config.INITIAL_BALANCE
+            last_trade_time = current_time
+            last_trade_key = trade_key
 
-    )
+            return {
+                "success": True,
+                "message": live_res["message"],
+                "trade": trade,
+                "summary": PaperTrader().summary()
+            }
 
+        # Fallback to Realistic Simulation if Live API key/balance is missing
+        print(f"⚠️ Live trade unavailable ({live_res.get('message')}). Executing via Realistic Simulation.")
+        trader = PaperTrader()
+        trade = trader.execute_trade(
+            market_data["buy_exchange"],
+            market_data["sell_exchange"],
+            market_data["buy_price"],
+            market_data["sell_price"],
+            custom_amount=custom_amount
+        )
 
-    # --------------------------------------------------------
-    # EXECUTE PAPER TRADE
-    # --------------------------------------------------------
+        save_trade(trade)
 
+        last_trade_time = current_time
+        last_trade_key = trade_key
+
+        return {
+            "success": True,
+            "message": f"⚡ Executed via Realistic Simulation: {live_res.get('message')}",
+            "trade": trade,
+            "summary": trader.summary()
+        }
+
+    # ========================================================
+    # PAPER TRADING MODE (REALISTIC SIMULATION)
+    # ========================================================
+    trader = PaperTrader()
     trade = trader.execute_trade(
-
         market_data["buy_exchange"],
-
         market_data["sell_exchange"],
-
         market_data["buy_price"],
-
         market_data["sell_price"],
-
-        market_data["fees"]
-
+        custom_amount=custom_amount
     )
-
-
-    # --------------------------------------------------------
-    # SAVE TRADE
-    # --------------------------------------------------------
 
     save_trade(trade)
 
-
-    # --------------------------------------------------------
-    # UPDATE COOLDOWN
-    # --------------------------------------------------------
-
     last_trade_time = current_time
-
     last_trade_key = trade_key
 
-
-    # --------------------------------------------------------
-    # RETURN RESULT
-    # --------------------------------------------------------
-
     return {
-
         "success": True,
-
-        "message":
-            "Automatic paper trade executed.",
-
+        "message": "Automatic paper trade executed successfully.",
         "trade": trade,
-
-        "summary": {
-
-            "balance":
-                round(
-                    trader.balance,
-                    2
-                ),
-
-            "profit":
-                round(
-                    trader.total_profit,
-                    2
-                ),
-
-            "trades":
-                trader.total_trades
-
-        }
-
+        "summary": trader.summary()
     }
 
 

@@ -1,3 +1,13 @@
+import os
+import sys
+
+# Ensure Windows stdout handles UTF-8 emojis cleanly
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 from flask import Flask, render_template, jsonify, request
 
 import config
@@ -9,7 +19,11 @@ from arbitrage import (
 
 from database import (
     get_all_trades,
-    create_database
+    create_database,
+    get_portfolio,
+    reset_portfolio,
+    get_total_profit,
+    get_total_trades
 )
 
 
@@ -27,58 +41,104 @@ create_database()
 # AUTO TRADE CONTROL
 # =====================================================
 
-# Same exchange pair-ku repeated trade prevent panna
 last_auto_trade_pair = None
 
 
 # =====================================================
-# DASHBOARD
+# DASHBOARD & SPA TAB ROUTES
 # =====================================================
 
 @app.route("/")
+@app.route("/prices")
+@app.route("/arbitrage")
+@app.route("/trades")
+@app.route("/settings")
 def home():
-
     return render_template("index.html")
 
 
 # =====================================================
-# LIVE PRICES
+# PORTFOLIO API - GET & RESET
 # =====================================================
 
-@app.route("/prices")
-def prices():
+@app.route("/api/portfolio", methods=["GET"])
+def get_portfolio_api():
 
-    return render_template("prices.html")
+    portfolio = get_portfolio()
+
+    return jsonify({
+
+        "success": True,
+
+        "portfolio": portfolio,
+
+        "total_profit": get_total_profit(),
+
+        "total_trades": get_total_trades()
+
+    })
+
+
+@app.route("/api/portfolio/reset", methods=["POST"])
+def reset_portfolio_api():
+
+    reset_portfolio(config.INITIAL_BALANCE)
+
+    return jsonify({
+
+        "success": True,
+
+        "message": "Paper wallet balance reset to $10,000 USDT.",
+
+        "portfolio": get_portfolio()
+
+    })
 
 
 # =====================================================
-# ARBITRAGE
+# MANUAL TRADE API
 # =====================================================
 
-@app.route("/arbitrage")
-def arbitrage_page():
+@app.route("/api/trade", methods=["POST"])
+def manual_trade_api():
 
-    return render_template("arbitrage.html")
+    data = request.get_json() or {}
 
+    custom_amount = data.get("trade_amount")
 
-# =====================================================
-# TRADE HISTORY
-# =====================================================
+    if custom_amount:
+        try:
+            custom_amount = float(custom_amount)
+            if custom_amount <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return jsonify({
+                "success": False,
+                "message": "Invalid trade amount."
+            }), 400
 
-@app.route("/trades")
-def trades_page():
+    market_data = analyze_market()
 
-    return render_template("trades.html")
+    if not market_data:
+        return jsonify({
+            "success": False,
+            "message": "Unable to fetch live prices for execution."
+        }), 503
 
+    result = execute_paper_trade(market_data, custom_amount=custom_amount)
 
-# =====================================================
-# SETTINGS PAGE
-# =====================================================
+    if result.get("success"):
+        return jsonify({
+            "success": True,
+            "message": "Manual trade executed successfully!",
+            "trade": result["trade"],
+            "summary": result["summary"]
+        })
 
-@app.route("/settings")
-def settings_page():
-
-    return render_template("settings.html")
+    return jsonify({
+        "success": False,
+        "message": result.get("message", "Execution failed.")
+    }), 400
 
 
 # =====================================================
@@ -87,21 +147,18 @@ def settings_page():
 
 @app.route("/api/settings", methods=["GET"])
 def get_settings():
-
     return jsonify({
-
         "success": True,
-
         "settings": {
-
-            "auto_trade":
-                config.AUTO_TRADE_ENABLED,
-
-            "min_profit":
-                config.MIN_PROFIT
-
+            "auto_trade": config.AUTO_TRADE_ENABLED,
+            "min_profit": config.MIN_PROFIT,
+            "trade_amount": getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0),
+            "slippage_enabled": getattr(config, "SLIPPAGE_ENABLED", True),
+            "slippage_pct": getattr(config, "SLIPPAGE_PCT", 0.05),
+            "cooldown": getattr(config, "AUTO_TRADE_COOLDOWN", 30),
+            "symbol": getattr(config, "SYMBOL", "BTC/USDT"),
+            "trading_mode": getattr(config, "TRADING_MODE", "PAPER")
         }
-
     })
 
 
@@ -111,105 +168,143 @@ def get_settings():
 
 @app.route("/api/settings", methods=["POST"])
 def update_settings():
-
     data = request.get_json()
 
     if not data:
-
         return jsonify({
-
             "success": False,
-
-            "message":
-                "No settings received."
-
+            "message": "No settings received."
         }), 400
 
-
-    # =================================================
-    # AUTO TRADE
-    # =================================================
-
     if "auto_trade" in data:
-
-        config.AUTO_TRADE_ENABLED = bool(
-            data["auto_trade"]
-        )
-
-
-    # =================================================
-    # MINIMUM PROFIT
-    # =================================================
+        config.AUTO_TRADE_ENABLED = bool(data["auto_trade"])
 
     if "min_profit" in data:
-
         try:
-
-            value = float(
-                data["min_profit"]
-            )
-
-            if value < 0:
-
-                raise ValueError
-
-
-            config.MIN_PROFIT = value
-
-
+            val = float(data["min_profit"])
+            if val >= 0:
+                config.MIN_PROFIT = val
         except (ValueError, TypeError):
+            pass
 
-            return jsonify({
+    if "trade_amount" in data:
+        try:
+            val = float(data["trade_amount"])
+            if val > 0:
+                config.DEFAULT_TRADE_AMOUNT = val
+        except (ValueError, TypeError):
+            pass
 
-                "success": False,
+    if "slippage_enabled" in data:
+        config.SLIPPAGE_ENABLED = bool(data["slippage_enabled"])
 
-                "message":
-                    "Invalid minimum profit."
+    if "slippage_pct" in data:
+        try:
+            val = float(data["slippage_pct"])
+            if val >= 0:
+                config.SLIPPAGE_PCT = val
+        except (ValueError, TypeError):
+            pass
 
-            }), 400
+    if "cooldown" in data:
+        try:
+            val = int(data["cooldown"])
+            if val >= 0:
+                config.AUTO_TRADE_COOLDOWN = val
+        except (ValueError, TypeError):
+            pass
 
+    if "symbol" in data and data["symbol"]:
+        config.SYMBOL = str(data["symbol"]).strip()
 
-    # =================================================
-    # PRINT SETTINGS
-    # =================================================
-
-    print()
-
-    print("==========================================")
-
-    print("⚙ SETTINGS UPDATED")
-
-    print("==========================================")
-
-    print(
-        "Auto Trade :",
-        config.AUTO_TRADE_ENABLED
-    )
-
-    print(
-        "Min Profit :",
-        config.MIN_PROFIT
-    )
-
+    if "trading_mode" in data:
+        if data["trading_mode"] in ["PAPER", "LIVE", "TESTNET"]:
+            config.TRADING_MODE = data["trading_mode"]
 
     return jsonify({
-
         "success": True,
-
-        "message":
-            "Settings updated successfully.",
-
+        "message": "Settings updated successfully.",
         "settings": {
-
-            "auto_trade":
-                config.AUTO_TRADE_ENABLED,
-
-            "min_profit":
-                config.MIN_PROFIT
-
+            "auto_trade": config.AUTO_TRADE_ENABLED,
+            "min_profit": config.MIN_PROFIT,
+            "trade_amount": getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0),
+            "slippage_enabled": getattr(config, "SLIPPAGE_ENABLED", True),
+            "slippage_pct": getattr(config, "SLIPPAGE_PCT", 0.05),
+            "cooldown": getattr(config, "AUTO_TRADE_COOLDOWN", 30),
+            "symbol": getattr(config, "SYMBOL", "BTC/USDT"),
+            "trading_mode": getattr(config, "TRADING_MODE", "PAPER")
         }
-
     })
+
+
+# =====================================================
+# API KEYS MANAGEMENT & CONNECTION TESTING
+# =====================================================
+
+@app.route("/api/keys", methods=["GET"])
+def get_keys_api():
+    from database import get_all_api_keys
+    return jsonify({
+        "success": True,
+        "keys": get_all_api_keys()
+    })
+
+
+@app.route("/api/keys", methods=["POST"])
+def save_key_api():
+    from database import save_api_key
+    data = request.get_json() or {}
+    exchange = data.get("exchange")
+    api_key = data.get("api_key")
+    api_secret = data.get("api_secret")
+
+    if not exchange or not api_key or not api_secret:
+        return jsonify({
+            "success": False,
+            "message": "Exchange, API Key, and API Secret are required."
+        }), 400
+
+    save_api_key(exchange, api_key, api_secret)
+    return jsonify({
+        "success": True,
+        "message": f"API key for {exchange} saved successfully!"
+    })
+
+
+@app.route("/api/keys/delete", methods=["POST"])
+def delete_key_api():
+    from database import delete_api_key
+    data = request.get_json() or {}
+    exchange = data.get("exchange")
+
+    if not exchange:
+        return jsonify({"success": False, "message": "Exchange name required."}), 400
+
+    delete_api_key(exchange)
+    return jsonify({
+        "success": True,
+        "message": f"API key for {exchange} removed."
+    })
+
+
+@app.route("/api/keys/test", methods=["POST"])
+def test_key_api():
+    from exchange import test_exchange_connection
+    from database import save_api_key
+    data = request.get_json() or {}
+    exchange = data.get("exchange")
+    api_key = data.get("api_key")
+    api_secret = data.get("api_secret")
+
+    if not exchange:
+        return jsonify({"success": False, "message": "Exchange name required."}), 400
+
+    if api_key and api_secret:
+        save_api_key(exchange, api_key, api_secret)
+
+    res = test_exchange_connection(exchange)
+    return jsonify(res)
+
 
 
 # =====================================================
@@ -221,13 +316,7 @@ def market_data():
 
     global last_auto_trade_pair
 
-
-    # =================================================
-    # GET MARKET DATA
-    # =================================================
-
     data = analyze_market()
-
 
     if data is None:
 
@@ -235,178 +324,40 @@ def market_data():
 
             "success": False,
 
-            "message":
-                "Unable to fetch enough exchange prices."
+            "message": "Unable to fetch enough exchange prices."
 
         }), 503
 
 
-    # =================================================
-    # AUTO TRADE RESULT
-    # =================================================
-
     auto_trade_result = None
 
-
-    # =================================================
-    # CHECK AUTO TRADE SETTINGS
-    # =================================================
-
     if config.AUTO_TRADE_ENABLED:
-
-        # ---------------------------------------------
-        # Check minimum profit
-        # ---------------------------------------------
 
         if data["net_profit"] >= config.MIN_PROFIT:
 
             current_pair = (
-
                 data["buy_exchange"],
-
                 data["sell_exchange"]
-
             )
-
-
-            # =========================================
-            # NEW OPPORTUNITY
-            # =========================================
 
             if current_pair != last_auto_trade_pair:
 
-                print()
-
-                print(
-                    "=========================================="
-                )
-
-                print(
-                    "🤖 AUTO TRADING"
-                )
-
-                print(
-                    "=========================================="
-                )
-
-
-                print(
-                    "Buy From :",
-                    data["buy_exchange"]
-                )
-
-
-                print(
-                    "Sell On  :",
-                    data["sell_exchange"]
-                )
-
-
-                print(
-                    "Buy Price:",
-                    data["buy_price"]
-                )
-
-
-                print(
-                    "Sell Price:",
-                    data["sell_price"]
-                )
-
-
-                print(
-                    "Difference:",
-                    data["difference"]
-                )
-
-
-                print(
-                    "Fees      :",
-                    data["fees"]
-                )
-
-
-                print(
-                    "Net Profit:",
-                    data["net_profit"]
-                )
-
-
-                # =====================================
-                # EXECUTE AUTOMATIC PAPER TRADE
-                # =====================================
-
-                auto_trade_result = (
-                    execute_paper_trade(data)
-                )
-
-
-                # =====================================
-                # SUCCESS
-                # =====================================
+                auto_trade_result = execute_paper_trade(data)
 
                 if auto_trade_result["success"]:
-
-                    last_auto_trade_pair = (
-                        current_pair
-                    )
-
-
-                    print()
-
-                    print(
-                        "✅ AUTO PAPER TRADE EXECUTED"
-                    )
-
-                    print(
-                        "✅ TRADE SAVED TO DATABASE"
-                    )
-
-
-                # =====================================
-                # FAILED
-                # =====================================
-
-                else:
-
-                    print()
-
-                    print(
-                        "❌ AUTO TRADE FAILED"
-                    )
-
-                    print(
-                        auto_trade_result.get(
-                            "message",
-                            "Unknown error"
-                        )
-                    )
-
-
-        # =================================================
-        # PROFIT BELOW MINIMUM
-        # =================================================
+                    last_auto_trade_pair = current_pair
 
         else:
-
-            # New profitable opportunity varumbothu
-            # trade allow panna reset pannrom.
-
             last_auto_trade_pair = None
 
-
-    # =================================================
-    # AUTO TRADE DISABLED
-    # =================================================
-
     else:
-
         last_auto_trade_pair = None
 
 
-    # =================================================
-    # API RESPONSE
-    # =================================================
+    portfolio = get_portfolio()
+    total_profit = get_total_profit()
+    total_trades = get_total_trades()
+
 
     return jsonify({
 
@@ -414,18 +365,29 @@ def market_data():
 
         "data": data,
 
-        "settings": {
+        "summary": {
 
-            "auto_trade":
-                config.AUTO_TRADE_ENABLED,
+            "balance": round(portfolio.get("usdt_balance", 10000.0), 2),
 
-            "min_profit":
-                config.MIN_PROFIT
+            "profit": total_profit,
+
+            "trades": total_trades,
+
+            "portfolio": portfolio
 
         },
 
-        "auto_trade":
-            auto_trade_result
+        "settings": {
+
+            "auto_trade": config.AUTO_TRADE_ENABLED,
+
+            "min_profit": config.MIN_PROFIT,
+
+            "trading_mode": getattr(config, "TRADING_MODE", "PAPER")
+
+        },
+
+        "auto_trade": auto_trade_result
 
     })
 
@@ -439,13 +401,22 @@ def trades_api():
 
     trade_list = get_all_trades()
 
-
     return jsonify({
 
         "success": True,
 
         "trades": trade_list
 
+    })
+
+
+@app.route("/api/trades/clear", methods=["POST"])
+def clear_trades_api():
+    from database import delete_all_trades
+    delete_all_trades()
+    return jsonify({
+        "success": True,
+        "message": "All trade history log cleared successfully."
     })
 
 
@@ -457,4 +428,4 @@ if __name__ == "__main__":
 
     app.run(
         debug=True
-    )
+    )

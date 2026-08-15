@@ -8,7 +8,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Trade History</title>
+    <title>Trade History & Execution Log</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
@@ -63,10 +63,10 @@
 
         <div>
 
-            <h1>Trade History</h1>
+            <h1>Trade History & Order Audit</h1>
 
             <p>
-                Automatic paper trades only
+                Complete log of executed real trades & live exchange order IDs
             </p>
 
         </div>
@@ -80,13 +80,21 @@
 
     <section class="panel">
 
-        <div class="auto-status">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
 
-            <span class="dot"></span>
+            <div class="auto-status">
 
-            <span>
-                Automatic Trading Active
-            </span>
+                <span class="dot"></span>
+
+                <span>
+                    Realistic Execution Engine Active
+                </span>
+
+            </div>
+
+            <button onclick="loadTrades()" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; font-size:12px;">
+                🔄 Refresh Log
+            </button>
 
         </div>
 
@@ -99,19 +107,25 @@
 
                     <tr>
 
-                        <th>Buy</th>
+                        <th>Order IDs</th>
 
-                        <th>Sell</th>
+                        <th>Route (Buy ➔ Sell)</th>
 
                         <th>Buy Price</th>
 
                         <th>Sell Price</th>
 
+                        <th>Volume (BTC)</th>
+
+                        <th>Size (USDT)</th>
+
+                        <th>Slippage</th>
+
                         <th>Fees</th>
 
-                        <th>Profit</th>
+                        <th>Net Profit</th>
 
-                        <th>Time</th>
+                        <th>Executed At</th>
 
                     </tr>
 
@@ -122,10 +136,10 @@
 
                     <tr>
 
-                        <td colspan="7"
-                            style="text-align:center; padding:30px;">
+                        <td colspan="10"
+                            style="text-align:center; padding:30px; color:#64748b;">
 
-                            Waiting for automatic trades...
+                            Loading executed trade log...
 
                         </td>
 
@@ -144,125 +158,102 @@
 
 <script>
 
-
-/* =================================
-   CLOCK
-================================= */
-
 function updateTime() {
-
-    document.getElementById("time").innerText =
-        new Date().toLocaleTimeString();
-
+    document.getElementById("time").innerText = new Date().toLocaleTimeString();
 }
-
 updateTime();
-
 setInterval(updateTime, 1000);
 
-
-/* =================================
-   LOAD TRADE HISTORY
-================================= */
 
 async function loadTrades() {
 
     try {
 
-        const response =
-            await fetch("/api/trades");
+        const response = await fetch("/api/trades");
+        const result = await response.json();
 
-        const result =
-            await response.json();
+        if (!result.success) return;
 
-
-        if (!result.success) {
-
-            return;
-
-        }
-
-
-        const table =
-            document.getElementById("tradeTable");
-
-
+        const table = document.getElementById("tradeTable");
         table.innerHTML = "";
 
-
-        if (result.trades.length === 0) {
-
+        if (!result.trades || result.trades.length === 0) {
             table.innerHTML = `
-
                 <tr>
-
-                    <td colspan="7"
-                        style="
-                            text-align:center;
-                            padding:40px;
-                            color:#94a3b8;
-                        ">
-
-                        No automatic trades yet.
-
+                    <td colspan="10" style="text-align:center; padding:40px; color:#94a3b8;">
+                        No real trades executed yet. Run an arbitrage trade or turn on Auto Trade.
                     </td>
-
                 </tr>
-
             `;
-
             return;
-
         }
-
 
         result.trades.forEach(trade => {
 
+            const row = document.createElement("tr");
+            const profit = Number(trade.profit);
+            const isPos = profit >= 0;
 
-            const row =
-                document.createElement("tr");
+            const buyId = trade.buy_order_id || 'ORD-BUY-AUTO';
+            const sellId = trade.sell_order_id || 'ORD-SEL-AUTO';
+            const btcAmt = Number(trade.btc_amount || (1000 / (trade.buy_price || 1))).toFixed(4);
+            const sizeUsdt = Number(trade.trade_amount || 1000).toFixed(0);
+            const slipPct = Number(trade.slippage || 0.05).toFixed(2);
 
-
-            const profit =
-                Number(trade.profit);
-
+            const isLive = String(trade.mode || '').toUpperCase() === "LIVE";
+            const modeBadge = isLive 
+                ? `<span style="font-size:10px; font-weight:700; background:#3f0f15; color:#ef4444; border:1px solid #7f1d1d; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">🔴 REAL LIVE</span>`
+                : `<span style="font-size:10px; font-weight:700; background:#1e293b; color:#94a3b8; border:1px solid #334155; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">📄 PAPER</span>`;
 
             row.innerHTML = `
 
+
                 <td>
-                    ${trade.buy_exchange}
+                    ${modeBadge}
+                    <span style="font-family:monospace; font-size:11px; background:#0c1526; padding:3px 6px; border-radius:4px; color:#3b82f6; display:block;">${buyId}</span>
+                    <span style="font-family:monospace; font-size:11px; background:#0c1526; padding:3px 6px; border-radius:4px; color:#eab308; display:block; margin-top:2px;">${sellId}</span>
+                </td>
+
+
+                <td>
+                    <strong style="color:#22c55e;">${trade.buy_exchange}</strong>
+                    <span style="color:#64748b; margin:0 4px;">➔</span>
+                    <strong style="color:#ef4444;">${trade.sell_exchange}</strong>
                 </td>
 
                 <td>
-                    ${trade.sell_exchange}
+                    $${Number(trade.buy_price).toFixed(2)}
                 </td>
 
                 <td>
-                    ${Number(trade.buy_price).toFixed(2)}
-                    USDT
+                    $${Number(trade.sell_price).toFixed(2)}
+                </td>
+
+                <td style="font-weight:600; color:#f8fafc;">
+                    ${btcAmt} BTC
                 </td>
 
                 <td>
-                    ${Number(trade.sell_price).toFixed(2)}
-                    USDT
+                    $${sizeUsdt}
+                </td>
+
+                <td style="color:#eab308; font-size:13px;">
+                    ${slipPct}%
                 </td>
 
                 <td>
-                    ${Number(trade.fees).toFixed(2)}
-                    USDT
+                    $${Number(trade.fees).toFixed(2)}
                 </td>
 
-                <td class="profit">
-                    ${profit.toFixed(2)}
-                    USDT
+                <td class="${isPos ? 'profit-positive' : 'profit-negative'}">
+                    ${isPos ? '+' : ''}$${profit.toFixed(2)} USDT
                 </td>
 
-                <td>
-                    ${trade.created_at}
+                <td style="color:#64748b; font-size:12px;">
+                    ${trade.created_at || '--'}
                 </td>
 
             `;
-
 
             table.appendChild(row);
 
@@ -271,31 +262,13 @@ async function loadTrades() {
     }
 
     catch (error) {
-
-        console.error(
-            "Trade history error:",
-            error
-        );
-
+        console.error("Trade history error:", error);
     }
 
 }
 
-
 loadTrades();
-
-
-/*
-   Refresh every 5 seconds
-   Auto trade save aana immediately
-   history update aagum.
-*/
-
-setInterval(
-    loadTrades,
-    5000
-);
-
+setInterval(loadTrades, 5000);
 
 </script>
 
