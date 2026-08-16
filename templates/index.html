@@ -833,90 +833,92 @@ async function loadMarketData() {
     try {
         const response = await fetch("/api/market");
         const result = await response.json();
-        if (!result.success) return;
-
-        const data = result.data;
-        if (!data) return;
-
-        // Dashboard values
-        document.getElementById("buyExchange").innerText = data.buy_exchange || "--";
-        document.getElementById("buyPrice").innerText = Number(data.buy_price || 0).toFixed(2) + " USDT";
-        document.getElementById("sellExchange").innerText = data.sell_exchange || "--";
-        document.getElementById("sellPrice").innerText = Number(data.sell_price || 0).toFixed(2) + " USDT";
-        document.getElementById("netProfit").innerText = Number(data.net_profit || 0).toFixed(2) + " USDT";
-
-        const opp = document.getElementById("opportunity");
-        if (Number(data.net_profit) > 0) {
-            opp.innerText = "🟢 Opportunity Found";
-        } else {
-            opp.innerText = "No Opportunity";
-        }
-
-        // Live Prices tab
-        if (data.prices) {
-            if (data.prices.Binance) document.getElementById("binance").innerText = Number(data.prices.Binance).toFixed(2);
-            if (data.prices.Bybit) document.getElementById("bybit").innerText = Number(data.prices.Bybit).toFixed(2);
-            if (data.prices.Coinbase || data.prices.Kraken) {
-                document.getElementById("coinbase").innerText = Number(data.prices.Coinbase || data.prices.Kraken).toFixed(2);
-            }
-        }
-
-        // Arbitrage tab
-        document.getElementById("arbBuy").innerText = data.buy_exchange || "--";
-        document.getElementById("arbBuyPrice").innerText = Number(data.buy_price || 0).toFixed(2) + " USDT";
-        document.getElementById("arbSell").innerText = data.sell_exchange || "--";
-        document.getElementById("arbSellPrice").innerText = Number(data.sell_price || 0).toFixed(2) + " USDT";
-        document.getElementById("arbDifference").innerText = Number(data.difference || 0).toFixed(2) + " USDT";
-        document.getElementById("arbNetProfit").innerText = Number(data.net_profit || 0).toFixed(2) + " USDT";
-
-        const oppBadge = document.getElementById("oppBadge");
-        if (Number(data.net_profit) >= (data.minimum_profit || 0.5)) {
-            oppBadge.innerText = "🟢 Profitable Opportunity";
-            oppBadge.style.background = "#132b20"; oppBadge.style.color = "#22c55e";
-        } else {
-            oppBadge.innerText = "🟡 Low Spread Opportunity";
-            oppBadge.style.background = "#2b2313"; oppBadge.style.color = "#eab308";
-        }
-
-        // Summary Cards & Wallet Balances
-        if (result.summary) {
-            document.getElementById("balance").innerText = Number(result.summary.balance || 10000).toFixed(2);
-            document.getElementById("profit").innerText = Number(result.summary.profit || 0).toFixed(2);
-            document.getElementById("trades").innerText = result.summary.trades || 0;
-
-            if (result.summary.portfolio) {
-                const p = result.summary.portfolio;
-                document.getElementById("binanceUsdt").innerText = "$" + Number(p.binance_usdt || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " USDT";
-                document.getElementById("bybitUsdt").innerText = "$" + Number(p.bybit_usdt || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " USDT";
-                document.getElementById("coinbaseUsdt").innerText = "$" + Number(p.coinbase_usdt || p.kraken_usdt || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " USDT";
-
-                document.getElementById("binanceBtc").innerText = Number(p.binance_btc || 0).toFixed(4) + " BTC";
-                document.getElementById("bybitBtc").innerText = Number(p.bybit_btc || 0).toFixed(4) + " BTC";
-                document.getElementById("coinbaseBtc").innerText = Number(p.coinbase_btc || p.kraken_btc || 0).toFixed(4) + " BTC";
-            }
-        }
-
-        if (result.settings) {
-            if (result.settings.trading_mode) {
-                const badge = document.getElementById("tradingModeBadge");
-                if (badge) {
-                    badge.innerText = result.settings.trading_mode === "LIVE" ? "● LIVE MODE" : "● Realistic Sim";
-                }
-            }
-            if (result.settings.auto_trade !== undefined) {
-                updateAutoTradeUI(result.settings.auto_trade);
-            }
-        }
-
-        checkAutoTradePopup(result);
-
-        const tradesTab = document.getElementById("view-trades");
-        if (tradesTab && tradesTab.classList.contains("active")) {
-            loadTradeHistoryTable();
-        }
-
+        updateUIWithMarketData(result);
     } catch (e) {
         console.error("Market data load error:", e);
+    }
+}
+
+function updateUIWithMarketData(result) {
+    if (!result || !result.success) return;
+    const data = result.data;
+    if (!data) return;
+
+    // Dashboard values
+    document.getElementById("buyExchange").innerText = data.buy_exchange || "--";
+    document.getElementById("buyPrice").innerText = Number(data.buy_price || 0).toFixed(2) + " USDT";
+    document.getElementById("sellExchange").innerText = data.sell_exchange || "--";
+    document.getElementById("sellPrice").innerText = Number(data.sell_price || 0).toFixed(2) + " USDT";
+    document.getElementById("netProfit").innerText = Number(data.net_profit || 0).toFixed(2) + " USDT";
+
+    const opp = document.getElementById("opportunity");
+    if (Number(data.net_profit) > 0) {
+        opp.innerText = "🟢 Opportunity Found";
+    } else {
+        opp.innerText = "No Opportunity";
+    }
+
+    // Live Prices tab
+    if (data.prices) {
+        if (data.prices.Binance) document.getElementById("binance").innerText = Number(data.prices.Binance).toFixed(2);
+        if (data.prices.Bybit) document.getElementById("bybit").innerText = Number(data.prices.Bybit).toFixed(2);
+        if (data.prices.Coinbase || data.prices.Kraken) {
+            document.getElementById("coinbase").innerText = Number(data.prices.Coinbase || data.prices.Kraken).toFixed(2);
+        }
+    }
+
+    // Arbitrage tab
+    document.getElementById("arbBuy").innerText = data.buy_exchange || "--";
+    document.getElementById("arbBuyPrice").innerText = Number(data.buy_price || 0).toFixed(2) + " USDT";
+    document.getElementById("arbSell").innerText = data.sell_exchange || "--";
+    document.getElementById("arbSellPrice").innerText = Number(data.sell_price || 0).toFixed(2) + " USDT";
+    document.getElementById("arbDifference").innerText = Number(data.difference || 0).toFixed(2) + " USDT";
+    document.getElementById("arbNetProfit").innerText = Number(data.net_profit || 0).toFixed(2) + " USDT";
+
+    const oppBadge = document.getElementById("oppBadge");
+    if (Number(data.net_profit) >= (data.minimum_profit || 0.5)) {
+        oppBadge.innerText = "🟢 Profitable Opportunity";
+        oppBadge.style.background = "#132b20"; oppBadge.style.color = "#22c55e";
+    } else {
+        oppBadge.innerText = "🟡 Low Spread Opportunity";
+        oppBadge.style.background = "#2b2313"; oppBadge.style.color = "#eab308";
+    }
+
+    // Summary Cards & Wallet Balances
+    if (result.summary) {
+        document.getElementById("balance").innerText = Number(result.summary.balance || 10000).toFixed(2);
+        document.getElementById("profit").innerText = Number(result.summary.profit || 0).toFixed(2);
+        document.getElementById("trades").innerText = result.summary.trades || 0;
+
+        if (result.summary.portfolio) {
+            const p = result.summary.portfolio;
+            document.getElementById("binanceUsdt").innerText = "$" + Number(p.binance_usdt || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " USDT";
+            document.getElementById("bybitUsdt").innerText = "$" + Number(p.bybit_usdt || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " USDT";
+            document.getElementById("coinbaseUsdt").innerText = "$" + Number(p.coinbase_usdt || p.kraken_usdt || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " USDT";
+
+            document.getElementById("binanceBtc").innerText = Number(p.binance_btc || 0).toFixed(4) + " BTC";
+            document.getElementById("bybitBtc").innerText = Number(p.bybit_btc || 0).toFixed(4) + " BTC";
+            document.getElementById("coinbaseBtc").innerText = Number(p.coinbase_btc || p.kraken_btc || 0).toFixed(4) + " BTC";
+        }
+    }
+
+    if (result.settings) {
+        if (result.settings.trading_mode) {
+            const badge = document.getElementById("tradingModeBadge");
+            if (badge) {
+                badge.innerText = result.settings.trading_mode === "LIVE" ? "● LIVE MODE" : "● Realistic Sim";
+            }
+        }
+        if (result.settings.auto_trade !== undefined) {
+            updateAutoTradeUI(result.settings.auto_trade);
+        }
+    }
+
+    checkAutoTradePopup(result);
+
+    const tradesTab = document.getElementById("view-trades");
+    if (tradesTab && tradesTab.classList.contains("active")) {
+        loadTradeHistoryTable();
     }
 }
 
@@ -1587,13 +1589,42 @@ function resetWalletInSettings() {
 
 
 /* =====================================================
-   INITIALIZATION & INITIAL TAB SELECTION
+   INITIALIZATION & UNTHROTTLED WEB WORKER BACKGROUND POLLING
 ===================================================== */
 const initialPath = window.location.pathname.replace('/', '') || 'dashboard';
 switchTab(null, initialPath);
 
 loadMarketData();
-setInterval(loadMarketData, 3000);
+
+// Start unthrottled background Web Worker polling for 24/7 background notifications
+try {
+    const workerCode = `
+        function pollMarket() {
+            fetch("/api/market")
+                .then(res => res.json())
+                .then(result => {
+                    self.postMessage({ type: "MARKET_DATA", result: result });
+                })
+                .catch(err => {})
+                .finally(() => {
+                    setTimeout(pollMarket, 2000);
+                });
+        }
+        pollMarket();
+    `;
+
+    const blob = new Blob([workerCode], { type: "application/javascript" });
+    const bgWorker = new Worker(URL.createObjectURL(blob));
+
+    bgWorker.onmessage = function(e) {
+        if (e.data && e.data.type === "MARKET_DATA") {
+            updateUIWithMarketData(e.data.result);
+        }
+    };
+} catch(e) {
+    // Fallback interval if workers restricted
+    setInterval(loadMarketData, 2500);
+}
 
 </script>
 </body>
