@@ -146,7 +146,7 @@ class PaperTrader:
             "slippage": round(slip_percent, 4),
             "trade_amount": trade_amount,
             "mode": "PAPER",
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "created_at": datetime.now().astimezone().isoformat(),
 
             "buy_order": buy_order,
             "sell_order": sell_order,

@@ -311,7 +311,7 @@ def save_trade(trade):
 
     created_at_str = trade.get("created_at")
     if not created_at_str:
-        created_at_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        created_at_str = datetime.now().astimezone().isoformat()
 
     cursor.execute("""
         INSERT INTO trades

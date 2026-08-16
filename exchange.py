@@ -350,7 +350,7 @@ def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, se
             "btc_amount": btc_amount,
             "slippage": 0.0,
             "trade_amount": trade_amount,
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "created_at": datetime.now().astimezone().isoformat(),
             "mode": "LIVE"
         }
     }

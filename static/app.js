@@ -485,20 +485,22 @@ function formatPrice(value) {
 // ======================================================
 
 function formatDateTime(value) {
-
-    if (!value) {
-
-        return "--";
+    if (!value) return "--";
+    try {
+        let str = String(value).trim();
+        let isoStr = str.includes('T') ? str : str.replace(' ', 'T');
+        let hasOffset = str.includes('Z') || str.includes('+') || (str.includes('-') && str.lastIndexOf('-') > 10);
+        if (!hasOffset) {
+            isoStr += 'Z';
+        }
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return str;
+        const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        const datePart = d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        return `<span style="color:#cbd5e1; font-weight:600; white-space:nowrap;">${timeStr}</span><br><small style="color:#64748b; font-size:11px; white-space:nowrap;">${datePart}</small>`;
+    } catch (e) {
+        return value;
     }
-
-
-    const date =
-        new Date(
-            value.replace(" ", "T") + "Z"
-        );
-
-
-    return date.toLocaleString();
 }
 
 
