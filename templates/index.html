@@ -898,9 +898,53 @@ async function loadMarketData() {
 
 
 /* =====================================================
-   AUTO TRADE POPUP
+   AUTO TRADE NOTIFICATIONS & POPUP
 ===================================================== */
+
+// Request browser notification permissions on initial load
+function requestNotificationPermission() {
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+}
+document.addEventListener("DOMContentLoaded", requestNotificationPermission);
+
+function playSuccessChime() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+}
+
+function triggerDesktopNotification(trade) {
+    if ("Notification" in window && Notification.permission === "granted") {
+        const buyEx = trade.buy || trade.buy_exchange || "Exchange";
+        const sellEx = trade.sell || trade.sell_exchange || "Exchange";
+        const profit = Number(trade.profit || 0).toFixed(2);
+        
+        try {
+            new Notification("⚡ Auto Trade Executed!", {
+                body: `${buyEx} ➔ ${sellEx} | Profit: +$${profit} USDT`,
+                tag: "auto-trade-notification"
+            });
+        } catch(e) {}
+    }
+}
+
 function showAutoTradePopup(trade) {
+    playSuccessChime();
+    triggerDesktopNotification(trade);
+
     const popup = document.getElementById("autoTradePopup");
     if (!popup) return;
 
@@ -946,7 +990,11 @@ function checkAutoTradePopup(market) {
     const tradeKey = `${trade.created_at || ''}_${trade.buy || ''}_${trade.sell || ''}_${trade.profit || ''}`;
     if (tradeKey === lastPopupTradeKey) return;
     lastPopupTradeKey = tradeKey;
+    
     showAutoTradePopup(trade);
+
+    // Refresh trade log table if active
+    loadTradeHistoryTable();
 }
 
 
