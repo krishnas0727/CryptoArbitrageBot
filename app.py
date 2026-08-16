@@ -19,6 +19,7 @@ from arbitrage import (
 
 from database import (
     get_all_trades,
+    get_latest_trade,
     create_database,
     get_portfolio,
     reset_portfolio,
@@ -387,7 +388,7 @@ def market_data():
 
         },
 
-        "auto_trade": last_background_trade_result
+        "auto_trade": {"success": True, "trade": get_latest_trade()} if get_latest_trade() else last_background_trade_result
 
     })
 

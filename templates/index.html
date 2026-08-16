@@ -151,6 +151,7 @@
 
 <!-- AUTO TRADE POPUP -->
 <div id="autoTradePopup"></div>
+<div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
 
 
 <!-- MAIN CONTENT -->
@@ -925,9 +926,16 @@ function updateUIWithMarketData(result) {
 function requestNotificationPermission() {
     if (!("Notification" in window)) return;
     if (Notification.permission === "default") {
-        Notification.requestPermission();
+        try {
+            Notification.requestPermission();
+        } catch(e) {}
     }
 }
+
+// Request permission on user interaction (clicks anywhere) to conform to browser policies
+document.addEventListener("click", () => {
+    requestNotificationPermission();
+}, { once: false });
 
 document.addEventListener("DOMContentLoaded", () => {
     requestNotificationPermission();
@@ -936,8 +944,42 @@ window.addEventListener("load", () => {
     requestNotificationPermission();
 });
 
-function playSuccessChime() {
-    // Sound disabled per user preference
+function showInAppToast(trade) {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.style.cssText = "position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px; pointer-events:none;";
+        document.body.appendChild(container);
+    }
+
+    const buyEx = trade.buy || trade.buy_exchange || "Exchange";
+    const sellEx = trade.sell || trade.sell_exchange || "Exchange";
+    const profit = Number(trade.profit || 0).toFixed(2);
+
+    const toast = document.createElement("div");
+    toast.style.cssText = "pointer-events:auto; background:#0f172a; border:1px solid #22c55e; border-left:5px solid #22c55e; color:#ffffff; padding:14px 18px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-family:sans-serif; min-width:280px; transition:all 0.3s ease;";
+
+    toast.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:14px; margin-bottom:4px; color:#22c55e;">
+            <span>⚡ Trade Executed</span>
+            <span style="cursor:pointer; opacity:0.7; font-size:16px;" onclick="this.parentElement.parentElement.remove()">×</span>
+        </div>
+        <div style="font-size:13px; color:#cbd5e1; margin-bottom:4px;">
+            <strong>${buyEx}</strong> ➔ <strong>${sellEx}</strong>
+        </div>
+        <div style="font-size:12px; font-weight:bold; color:#4ade80;">
+            Net Profit: +$${profit} USDT
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        setTimeout(() => toast.remove(), 400);
+    }, 5500);
 }
 
 function triggerDesktopNotification(trade) {
@@ -947,8 +989,7 @@ function triggerDesktopNotification(trade) {
         const profit = Number(trade.profit || 0).toFixed(2);
         
         try {
-            // Include renotify: true and unique tag so OS & Browser pop up fresh banner for every consecutive trade
-            const uniqueTag = "auto-trade-" + (trade.buy_order_id || trade.id || trade.created_at || Date.now());
+            const uniqueTag = "auto-trade-" + (trade.id || trade.buy_order_id || trade.created_at || Date.now());
             new Notification("⚡ Auto Trade Executed & Saved!", {
                 body: `${buyEx} ➔ ${sellEx} | Profit: +$${profit} USDT`,
                 tag: uniqueTag,
@@ -956,13 +997,15 @@ function triggerDesktopNotification(trade) {
                 silent: true,
                 requireInteraction: false
             });
-        } catch(e) {}
+        } catch(e) {
+            console.error("Notification error:", e);
+        }
     }
 }
 
 async function testNotificationAndTrade() {
     try {
-        requestNotificationPermission(true);
+        requestNotificationPermission();
 
         const response = await fetch("/api/trade", {
             method: "POST",
@@ -984,6 +1027,7 @@ async function testNotificationAndTrade() {
 }
 
 function showAutoTradePopup(trade) {
+    showInAppToast(trade);
     triggerDesktopNotification(trade);
 
     const popup = document.getElementById("autoTradePopup");
@@ -1028,7 +1072,14 @@ function checkAutoTradePopup(market) {
     const trade = market.auto_trade.trade;
     if (!trade) return;
 
-    const tradeKey = `${trade.buy_order_id || trade.id || trade.created_at || ''}_${trade.buy || trade.buy_exchange || ''}_${trade.sell || trade.sell_exchange || ''}_${trade.profit || ''}`;
+    const tradeKey = `trade_${trade.id || trade.buy_order_id || trade.created_at || ''}_${trade.profit || ''}`;
+    
+    // On first market poll, initialize lastPopupTradeKey so historical trades don't popup on load
+    if (lastPopupTradeKey === null) {
+        lastPopupTradeKey = tradeKey;
+        return;
+    }
+
     if (tradeKey === lastPopupTradeKey) return;
     lastPopupTradeKey = tradeKey;
     

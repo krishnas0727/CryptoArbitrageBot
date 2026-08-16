@@ -394,6 +394,44 @@ def get_all_trades():
     return result
 
 
+def get_latest_trade():
+    create_database()
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            id,
+            buy_exchange,
+            sell_exchange,
+            buy_price,
+            sell_price,
+            fees,
+            profit,
+            buy_order_id,
+            sell_order_id,
+            btc_amount,
+            slippage,
+            trade_amount,
+            COALESCE(mode, 'PAPER') AS mode,
+            created_at
+        FROM trades
+        ORDER BY id DESC
+        LIMIT 1
+    """)
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        d = dict(row)
+        d["buy"] = d.get("buy_exchange", "")
+        d["sell"] = d.get("sell_exchange", "")
+        return d
+
+    return None
+
+
 
 # ============================================================
 # DELETE ALL TRADES
