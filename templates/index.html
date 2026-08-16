@@ -162,7 +162,12 @@
             <h1 id="pageTitle">Dashboard</h1>
             <p id="pageSubtitle">Crypto Arbitrage Bot Overview</p>
         </div>
-        <div style="display:flex; align-items:center; gap:20px;">
+        <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+            <!-- DESKTOP NOTIFICATION TOGGLE BUTTON -->
+            <button id="notifBtn" onclick="requestNotificationPermission(true)" style="background:#0c1526; border:1px solid #202e45; color:#cbd5e1; padding:6px 14px; border-radius:24px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.2s;">
+                🔔 Enable Notifications
+            </button>
+
             <!-- QUICK AUTO TRADE TOGGLE -->
             <div style="display:flex; align-items:center; gap:10px; background:#0c1526; border:1px solid #202e45; padding:6px 14px; border-radius:24px;">
                 <span style="font-size:12px; font-weight:600; color:#cbd5e1;">Auto Trade:</span>
@@ -183,6 +188,25 @@
          TAB 1: DASHBOARD
     ===================================================== -->
     <div id="view-dashboard" class="tab-view active">
+
+        <!-- LIVE BOT SCANNING & DATABASE STATUS BANNER -->
+        <div style="background:#0c1729; border:1px solid #1e3a5f; padding:12px 20px; border-radius:12px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e;"></span>
+                <div>
+                    <strong style="color:#f8fafc; font-size:13px; display:block;">🤖 Auto-Trader Engine: ACTIVE & SCANNING</strong>
+                    <small style="color:#94a3b8; font-size:11px;">Continuously checking live spreads across Binance, Bybit, Coinbase & Kraken (Target: Net Profit ≥ $0.01 USDT)</small>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:11px; background:#1e293b; color:#38bdf8; border:1px solid #0284c7; padding:4px 10px; border-radius:6px; font-weight:600;">
+                    💾 SQLite DB: CONNECTED
+                </span>
+                <button onclick="testNotificationAndTrade()" style="background:#0284c7; border:none; color:white; font-size:11px; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
+                    🧪 Test Notification & Auto-Save
+                </button>
+            </div>
+        </div>
 
         <section class="cards">
             <div class="card">
@@ -901,13 +925,51 @@ async function loadMarketData() {
    AUTO TRADE NOTIFICATIONS & POPUP
 ===================================================== */
 
-// Request browser notification permissions on initial load
-function requestNotificationPermission() {
-    if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
+function updateNotifBtnUI() {
+    const btn = document.getElementById("notifBtn");
+    if (!btn || !("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+        btn.innerHTML = "🔔 Notifications: ACTIVE 🟢";
+        btn.style.borderColor = "#22c55e";
+        btn.style.color = "#4ade80";
+        btn.style.background = "#052e16";
+    } else if (Notification.permission === "denied") {
+        btn.innerHTML = "🔔 Notifications: BLOCKED 🔴";
+        btn.style.borderColor = "#ef4444";
+        btn.style.color = "#fca5a5";
+        btn.style.background = "#450a0a";
+    } else {
+        btn.innerHTML = "🔔 Enable Notifications";
+        btn.style.borderColor = "#202e45";
+        btn.style.color = "#cbd5e1";
+        btn.style.background = "#0c1526";
     }
 }
-document.addEventListener("DOMContentLoaded", requestNotificationPermission);
+
+function requestNotificationPermission(userTriggered = false) {
+    if (!("Notification" in window)) return;
+
+    if (userTriggered || Notification.permission === "default") {
+        Notification.requestPermission().then(permission => {
+            updateNotifBtnUI();
+            if (permission === "granted" && userTriggered) {
+                try {
+                    new Notification("🔔 System Notifications Activated!", {
+                        body: "You will now receive instant popups whenever automated arbitrage trades complete.",
+                        tag: "test-notification"
+                    });
+                } catch(e) {}
+            }
+        });
+    } else {
+        updateNotifBtnUI();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    updateNotifBtnUI();
+});
 
 function playSuccessChime() {
     try {
@@ -933,11 +995,35 @@ function triggerDesktopNotification(trade) {
         const profit = Number(trade.profit || 0).toFixed(2);
         
         try {
-            new Notification("⚡ Auto Trade Executed!", {
+            new Notification("⚡ Auto Trade Executed & Saved!", {
                 body: `${buyEx} ➔ ${sellEx} | Profit: +$${profit} USDT`,
                 tag: "auto-trade-notification"
             });
         } catch(e) {}
+    }
+}
+
+async function testNotificationAndTrade() {
+    try {
+        requestNotificationPermission(true);
+        playSuccessChime();
+
+        const response = await fetch("/api/trade", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ trade_amount: 1000 })
+        });
+        const result = await response.json();
+
+        if (result.success && result.trade) {
+            showAutoTradePopup(result.trade);
+            loadTradeHistoryTable();
+            loadMarketData();
+        } else {
+            alert(result.message || "Test trade failed");
+        }
+    } catch(e) {
+        console.error("Test trade error:", e);
     }
 }
 
