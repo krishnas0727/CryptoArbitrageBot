@@ -164,6 +164,11 @@
             <p id="pageSubtitle">Crypto Arbitrage Bot Overview</p>
         </div>
         <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+            <!-- DESKTOP NOTIFICATION TOGGLE BUTTON -->
+            <button id="notifBtn" onclick="requestNotificationPermission(true)" style="background:#0c1526; border:1px solid #202e45; color:#cbd5e1; padding:6px 14px; border-radius:24px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.2s;">
+                🔔 Enable Notifications
+            </button>
+
             <!-- QUICK AUTO TRADE TOGGLE -->
             <div style="display:flex; align-items:center; gap:10px; background:#0c1526; border:1px solid #202e45; padding:6px 14px; border-radius:24px;">
                 <span style="font-size:12px; font-weight:600; color:#cbd5e1;">Auto Trade:</span>
@@ -923,63 +928,72 @@ function updateUIWithMarketData(result) {
    AUTO TRADE NOTIFICATIONS & POPUP
 ===================================================== */
 
-function requestNotificationPermission() {
-    if (!("Notification" in window)) return;
-    if (Notification.permission === "default") {
-        try {
-            Notification.requestPermission();
-        } catch(e) {}
+function updateNotifBtnUI() {
+    const btn = document.getElementById("notifBtn");
+    if (!btn || !("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+        btn.innerHTML = "🔔 Notifications: ACTIVE 🟢";
+        btn.style.borderColor = "#22c55e";
+        btn.style.color = "#4ade80";
+        btn.style.background = "#052e16";
+    } else if (Notification.permission === "denied") {
+        btn.innerHTML = "🔔 Notifications: BLOCKED 🔴";
+        btn.style.borderColor = "#ef4444";
+        btn.style.color = "#fca5a5";
+        btn.style.background = "#450a0a";
+    } else {
+        btn.innerHTML = "🔔 Enable Notifications";
+        btn.style.borderColor = "#202e45";
+        btn.style.color = "#cbd5e1";
+        btn.style.background = "#0c1526";
     }
 }
 
-// Request permission on user interaction (clicks anywhere) to conform to browser policies
-document.addEventListener("click", () => {
-    requestNotificationPermission();
-}, { once: false });
+function requestNotificationPermission(userTriggered = false) {
+    if (!("Notification" in window)) return;
+
+    if (userTriggered || Notification.permission === "default") {
+        Notification.requestPermission().then(permission => {
+            updateNotifBtnUI();
+            if (permission === "granted" && userTriggered) {
+                try {
+                    new Notification("🔔 System Notifications Activated!", {
+                        body: "You will now receive instant popups whenever automated arbitrage trades complete.",
+                        tag: "test-notification"
+                    });
+                } catch(e) {}
+            }
+        });
+    } else {
+        updateNotifBtnUI();
+    }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-    requestNotificationPermission();
-});
-window.addEventListener("load", () => {
-    requestNotificationPermission();
+    updateNotifBtnUI();
 });
 
-function showInAppToast(trade) {
-    let container = document.getElementById("toastContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.style.cssText = "position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px; pointer-events:none;";
-        document.body.appendChild(container);
-    }
-
-    const buyEx = trade.buy || trade.buy_exchange || "Exchange";
-    const sellEx = trade.sell || trade.sell_exchange || "Exchange";
-    const profit = Number(trade.profit || 0).toFixed(2);
-
-    const toast = document.createElement("div");
-    toast.style.cssText = "pointer-events:auto; background:#0f172a; border:1px solid #22c55e; border-left:5px solid #22c55e; color:#ffffff; padding:14px 18px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-family:sans-serif; min-width:280px; transition:all 0.3s ease;";
-
-    toast.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:14px; margin-bottom:4px; color:#22c55e;">
-            <span>⚡ Trade Executed</span>
-            <span style="cursor:pointer; opacity:0.7; font-size:16px;" onclick="this.parentElement.parentElement.remove()">×</span>
-        </div>
-        <div style="font-size:13px; color:#cbd5e1; margin-bottom:4px;">
-            <strong>${buyEx}</strong> ➔ <strong>${sellEx}</strong>
-        </div>
-        <div style="font-size:12px; font-weight:bold; color:#4ade80;">
-            Net Profit: +$${profit} USDT
-        </div>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(20px)';
-        setTimeout(() => toast.remove(), 400);
-    }, 5500);
+function playSuccessChime() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
 }
 
 function triggerDesktopNotification(trade) {
@@ -989,23 +1003,20 @@ function triggerDesktopNotification(trade) {
         const profit = Number(trade.profit || 0).toFixed(2);
         
         try {
-            const uniqueTag = "auto-trade-" + (trade.id || trade.buy_order_id || trade.created_at || Date.now());
+            const uniqueTag = "auto-trade-" + (trade.buy_order_id || trade.created_at || Date.now());
             new Notification("⚡ Auto Trade Executed & Saved!", {
                 body: `${buyEx} ➔ ${sellEx} | Profit: +$${profit} USDT`,
                 tag: uniqueTag,
-                renotify: true,
-                silent: true,
-                requireInteraction: false
+                renotify: true
             });
-        } catch(e) {
-            console.error("Notification error:", e);
-        }
+        } catch(e) {}
     }
 }
 
 async function testNotificationAndTrade() {
     try {
-        requestNotificationPermission();
+        requestNotificationPermission(true);
+        playSuccessChime();
 
         const response = await fetch("/api/trade", {
             method: "POST",
@@ -1027,7 +1038,7 @@ async function testNotificationAndTrade() {
 }
 
 function showAutoTradePopup(trade) {
-    showInAppToast(trade);
+    playSuccessChime();
     triggerDesktopNotification(trade);
 
     const popup = document.getElementById("autoTradePopup");
@@ -1072,14 +1083,7 @@ function checkAutoTradePopup(market) {
     const trade = market.auto_trade.trade;
     if (!trade) return;
 
-    const tradeKey = `trade_${trade.id || trade.buy_order_id || trade.created_at || ''}_${trade.profit || ''}`;
-    
-    // On first market poll, initialize lastPopupTradeKey so historical trades don't popup on load
-    if (lastPopupTradeKey === null) {
-        lastPopupTradeKey = tradeKey;
-        return;
-    }
-
+    const tradeKey = `${trade.buy_order_id || trade.created_at || ''}_${trade.buy || trade.buy_exchange || ''}_${trade.sell || trade.sell_exchange || ''}_${trade.profit || ''}`;
     if (tradeKey === lastPopupTradeKey) return;
     lastPopupTradeKey = tradeKey;
     
