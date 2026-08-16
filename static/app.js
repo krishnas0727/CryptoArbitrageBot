@@ -403,112 +403,60 @@ async function loadMarketData() {
 async function loadTradeHistory() {
 
     try {
+        const response = await fetch("/api/trades");
+        const result = await response.json();
 
-        const response =
-            await fetch("/api/trades");
-
-
-        const result =
-            await response.json();
-
-
-        const table =
-            document.getElementById(
-                "tradeHistory"
-            );
-
+        const table = document.getElementById("tradeTable") || document.getElementById("tradeHistory");
 
         if (!table) {
             return;
         }
 
-
         table.innerHTML = "";
 
-
-        if (
-            !result.success ||
-            result.trades.length === 0
-        ) {
-
+        if (!result.success || !result.trades || result.trades.length === 0) {
             table.innerHTML = `
                 <tr>
-                    <td colspan="7">
-                        No trades yet
+                    <td colspan="10" style="text-align:center; padding:30px; color:#64748b;">
+                        No trades executed yet
                     </td>
                 </tr>
             `;
-
             return;
         }
 
+        result.trades.forEach(trade => {
+            const row = document.createElement("tr");
+            const buyEx = trade.buy_exchange || trade.buy || "--";
+            const sellEx = trade.sell_exchange || trade.sell || "--";
+            const profit = Number(trade.profit || 0);
 
-        result.trades.forEach(
-            trade => {
+            row.innerHTML = `
+                <td>
+                    <span style="font-family:monospace; font-size:11px; background:#0c1526; padding:3px 6px; border-radius:4px; color:#3b82f6;">${trade.buy_order_id || 'AUTO-BUY'}</span>
+                </td>
+                <td>
+                    <strong style="color:#22c55e;">${buyEx}</strong>
+                    <span style="color:#64748b; margin:0 4px;">➔</span>
+                    <strong style="color:#ef4444;">${sellEx}</strong>
+                </td>
+                <td>$${formatPrice(trade.buy_price)}</td>
+                <td>$${formatPrice(trade.sell_price)}</td>
+                <td>${Number(trade.btc_amount || 0).toFixed(4)} BTC</td>
+                <td>$${Number(trade.trade_amount || 0).toFixed(0)}</td>
+                <td>${Number(trade.slippage || 0).toFixed(2)}%</td>
+                <td>$${formatPrice(trade.fees)}</td>
+                <td class="${profit >= 0 ? "profit-positive" : "profit-negative"}">
+                    ${profit >= 0 ? "+" : ""}$${formatPrice(profit)} USDT
+                </td>
+                <td>${formatDateTime(trade.created_at)}</td>
+            `;
 
-                const row =
-                    document.createElement("tr");
-
-
-                row.innerHTML = `
-
-                    <td>
-                        ${trade.buy}
-                    </td>
-
-                    <td>
-                        ${trade.sell}
-                    </td>
-
-                    <td>
-                        ${formatPrice(
-                            trade.buy_price
-                        )}
-                    </td>
-
-                    <td>
-                        ${formatPrice(
-                            trade.sell_price
-                        )}
-                    </td>
-
-                    <td>
-                        ${formatPrice(
-                            trade.fees
-                        )}
-                    </td>
-
-                    <td class="${
-                        trade.profit >= 0
-                            ? "profit-positive"
-                            : "profit-negative"
-                    }">
-                        ${formatPrice(
-                            trade.profit
-                        )}
-                    </td>
-
-                    <td>
-                        ${formatDateTime(
-                            trade.created_at
-                        )}
-                    </td>
-
-                `;
-
-
-                table.appendChild(row);
-
-            }
-        );
-
+            table.appendChild(row);
+        });
 
     } catch (error) {
-
-        console.error(
-            "Trade History Error:",
-            error
-        );
+        console.error("Trade History Error:", error);
     }
 }
 

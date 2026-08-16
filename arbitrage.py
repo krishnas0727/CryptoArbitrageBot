@@ -99,7 +99,7 @@ def analyze_market():
 # EXECUTE TRADE (ROUTER: PAPER vs LIVE)
 # ============================================================
 
-def execute_paper_trade(market_data, custom_amount=None):
+def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
 
     global last_trade_time
     global last_trade_key
@@ -110,7 +110,7 @@ def execute_paper_trade(market_data, custom_amount=None):
             "message": "Market data unavailable."
         }
 
-    if market_data["net_profit"] < config.MIN_PROFIT:
+    if not is_manual and custom_amount is None and market_data["net_profit"] < config.MIN_PROFIT:
         return {
             "success": False,
             "message": f"Execution skipped: Profit (${market_data['net_profit']:.2f}) is below minimum requirement ${config.MIN_PROFIT:.2f} USDT."
@@ -123,7 +123,8 @@ def execute_paper_trade(market_data, custom_amount=None):
     )
 
     if (
-        trade_key == last_trade_key
+        not is_manual
+        and trade_key == last_trade_key
         and current_time - last_trade_time < config.AUTO_TRADE_COOLDOWN
         and not custom_amount
     ):

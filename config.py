@@ -52,4 +52,7 @@ REFRESH_INTERVAL = 2
 # DATABASE
 # ==========================================
 
-DATABASE_NAME = "data/trades.db"
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_NAME = os.path.join(BASE_DIR, "data", "trades.db")
+

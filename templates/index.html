@@ -1104,6 +1104,8 @@ async function loadTradeHistoryTable(isManualClick = false) {
                 const profit = Number(trade.profit);
                 const isPos = profit >= 0;
 
+                const buyEx = trade.buy_exchange || trade.buy || "--";
+                const sellEx = trade.sell_exchange || trade.sell || "--";
                 const buyId = trade.buy_order_id || 'ORD-BUY-AUTO';
                 const sellId = trade.sell_order_id || 'ORD-SEL-AUTO';
                 const btcAmt = Number(trade.btc_amount || (1000 / (trade.buy_price || 1))).toFixed(4);
@@ -1124,9 +1126,9 @@ async function loadTradeHistoryTable(isManualClick = false) {
                         <span style="font-family:monospace; font-size:11px; background:#0c1526; padding:3px 6px; border-radius:4px; color:#eab308; display:block; margin-top:2px;">${sellId}</span>
                     </td>
                     <td>
-                        <strong style="color:#22c55e;">${trade.buy_exchange}</strong>
+                        <strong style="color:#22c55e;">${buyEx}</strong>
                         <span style="color:#64748b; margin:0 4px;">➔</span>
-                        <strong style="color:#ef4444;">${trade.sell_exchange}</strong>
+                        <strong style="color:#ef4444;">${sellEx}</strong>
                     </td>
                     <td>$${Number(trade.buy_price).toFixed(2)}</td>
                     <td>$${Number(trade.sell_price).toFixed(2)}</td>

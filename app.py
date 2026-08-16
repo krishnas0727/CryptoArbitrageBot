@@ -125,7 +125,7 @@ def manual_trade_api():
             "message": "Unable to fetch live prices for execution."
         }), 503
 
-    result = execute_paper_trade(market_data, custom_amount=custom_amount)
+    result = execute_paper_trade(market_data, custom_amount=custom_amount, is_manual=True)
 
     if result.get("success"):
         return jsonify({

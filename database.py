@@ -303,6 +303,8 @@ def reset_portfolio(initial_usdt=10000.00):
 
 def save_trade(trade):
 
+    create_database()
+
     conn = get_connection()
 
     cursor = conn.cursor()
@@ -359,7 +361,6 @@ def get_all_trades():
     conn = get_connection()
     cursor = conn.cursor()
 
-
     cursor.execute("""
         SELECT
             id,
@@ -378,18 +379,20 @@ def get_all_trades():
             created_at
         FROM trades
         ORDER BY id DESC
-
     """)
 
-
     rows = cursor.fetchall()
-
     conn.close()
 
-    return [
-        dict(row)
-        for row in rows
-    ]
+    result = []
+    for row in rows:
+        d = dict(row)
+        d["buy"] = d.get("buy_exchange", "")
+        d["sell"] = d.get("sell_exchange", "")
+        result.append(d)
+
+    return result
+
 
 
 # ============================================================
