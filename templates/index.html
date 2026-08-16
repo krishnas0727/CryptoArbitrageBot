@@ -1083,7 +1083,14 @@ function checkAutoTradePopup(market) {
     const trade = market.auto_trade.trade;
     if (!trade) return;
 
-    const tradeKey = `${trade.buy_order_id || trade.created_at || ''}_${trade.buy || trade.buy_exchange || ''}_${trade.sell || trade.sell_exchange || ''}_${trade.profit || ''}`;
+    const tradeKey = `trade_${trade.id || trade.buy_order_id || trade.created_at || ''}_${trade.profit || ''}`;
+    
+    // On initial page load, store initial trade key so past historical trades don't popup on load
+    if (lastPopupTradeKey === null) {
+        lastPopupTradeKey = tradeKey;
+        return;
+    }
+
     if (tradeKey === lastPopupTradeKey) return;
     lastPopupTradeKey = tradeKey;
     

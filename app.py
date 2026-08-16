@@ -388,7 +388,7 @@ def market_data():
 
         },
 
-        "auto_trade": last_background_trade_result
+        "auto_trade": {"success": True, "trade": get_latest_trade()} if get_latest_trade() else last_background_trade_result
 
     })
 
