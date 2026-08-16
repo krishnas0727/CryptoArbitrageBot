@@ -27,6 +27,9 @@ from database import (
 )
 
 
+import threading
+import time
+
 app = Flask(__name__)
 
 
@@ -38,10 +41,32 @@ create_database()
 
 
 # =====================================================
-# AUTO TRADE CONTROL
+# AUTO TRADE CONTROL & BACKGROUND WORKER
 # =====================================================
 
 last_auto_trade_pair = None
+
+def start_background_auto_trader():
+    def auto_trader_loop():
+        print("🤖 Background Auto-Trader Thread Started...")
+        while True:
+            try:
+                if getattr(config, "AUTO_TRADE_ENABLED", True):
+                    data = analyze_market()
+                    if data and data.get("net_profit", 0) >= getattr(config, "MIN_PROFIT", 0.01):
+                        res = execute_paper_trade(data)
+                        if res and res.get("success"):
+                            trade = res.get("trade", {})
+                            print(f"⚡ [Background Auto-Trader] Executed: {trade.get('buy_exchange')} ➔ {trade.get('sell_exchange')} | Profit: +${trade.get('profit', 0):.2f} USDT")
+            except Exception as e:
+                print(f"⚠️ [Background Auto-Trader] Error: {e}")
+
+            time.sleep(getattr(config, "REFRESH_INTERVAL", 3))
+
+    thread = threading.Thread(target=auto_trader_loop, daemon=True)
+    thread.start()
+
+start_background_auto_trader()
 
 
 # =====================================================
