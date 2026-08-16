@@ -1591,42 +1591,38 @@ function resetWalletInSettings() {
 
 
 /* =====================================================
-   INITIALIZATION & UNTHROTTLED WEB WORKER BACKGROUND POLLING
+   INITIALIZATION & CONTINUOUS AUTOMATIC POLLING
 ===================================================== */
 const initialPath = window.location.pathname.replace('/', '') || 'dashboard';
 switchTab(null, initialPath);
 
-loadMarketData();
+// Continuous background polling loop (runs 24/7 without page refresh)
+let isPollingRunning = false;
 
-// Start unthrottled background Web Worker polling for 24/7 background notifications
-try {
-    const workerCode = `
-        function pollMarket() {
-            fetch("/api/market")
-                .then(res => res.json())
-                .then(result => {
-                    self.postMessage({ type: "MARKET_DATA", result: result });
-                })
-                .catch(err => {})
-                .finally(() => {
-                    setTimeout(pollMarket, 2000);
-                });
+async function startContinuousPolling() {
+    if (isPollingRunning) return;
+    isPollingRunning = true;
+
+    while (true) {
+        try {
+            await loadMarketData();
+        } catch (e) {
+            console.error("Auto-polling error:", e);
         }
-        pollMarket();
-    `;
-
-    const blob = new Blob([workerCode], { type: "application/javascript" });
-    const bgWorker = new Worker(URL.createObjectURL(blob));
-
-    bgWorker.onmessage = function(e) {
-        if (e.data && e.data.type === "MARKET_DATA") {
-            updateUIWithMarketData(e.data.result);
-        }
-    };
-} catch(e) {
-    // Fallback interval if workers restricted
-    setInterval(loadMarketData, 2500);
+        await new Promise(resolve => setTimeout(resolve, 2500));
+    }
 }
+
+// Initial fetch + continuous auto-polling
+loadMarketData();
+startContinuousPolling();
+
+// Re-sync instantly whenever user switches back to browser tab
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+        loadMarketData();
+    }
+});
 
 </script>
 </body>
