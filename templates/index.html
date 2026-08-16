@@ -937,25 +937,7 @@ window.addEventListener("load", () => {
 });
 
 function playSuccessChime() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        if (ctx.state === 'suspended') {
-            ctx.resume();
-        }
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-    } catch(e) {}
+    // Sound disabled per user preference
 }
 
 function triggerDesktopNotification(trade) {
@@ -971,6 +953,7 @@ function triggerDesktopNotification(trade) {
                 body: `${buyEx} ➔ ${sellEx} | Profit: +$${profit} USDT`,
                 tag: uniqueTag,
                 renotify: true,
+                silent: true,
                 requireInteraction: false
             });
         } catch(e) {}
@@ -980,7 +963,6 @@ function triggerDesktopNotification(trade) {
 async function testNotificationAndTrade() {
     try {
         requestNotificationPermission(true);
-        playSuccessChime();
 
         const response = await fetch("/api/trade", {
             method: "POST",
@@ -1002,7 +984,6 @@ async function testNotificationAndTrade() {
 }
 
 function showAutoTradePopup(trade) {
-    playSuccessChime();
     triggerDesktopNotification(trade);
 
     const popup = document.getElementById("autoTradePopup");
