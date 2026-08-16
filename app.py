@@ -44,11 +44,12 @@ create_database()
 # AUTO TRADE CONTROL & BACKGROUND WORKER
 # =====================================================
 
-last_auto_trade_pair = None
+last_background_trade_result = None
 
 def start_background_auto_trader():
     def auto_trader_loop():
-        print("🤖 Background Auto-Trader Thread Started...")
+        global last_background_trade_result
+        print("🤖 Background Auto-Trader Thread Started...", flush=True)
         while True:
             try:
                 if getattr(config, "AUTO_TRADE_ENABLED", True):
@@ -56,10 +57,14 @@ def start_background_auto_trader():
                     if data and data.get("net_profit", 0) >= getattr(config, "MIN_PROFIT", 0.01):
                         res = execute_paper_trade(data)
                         if res and res.get("success"):
+                            last_background_trade_result = res
                             trade = res.get("trade", {})
-                            print(f"⚡ [Background Auto-Trader] Executed: {trade.get('buy_exchange')} ➔ {trade.get('sell_exchange')} | Profit: +${trade.get('profit', 0):.2f} USDT")
+                            print(f"⚡ [Background Auto-Trader] Executed: {trade.get('buy_exchange')} ➔ {trade.get('sell_exchange')} | Profit: +${trade.get('profit', 0):.2f} USDT", flush=True)
+                        else:
+                            if res:
+                                last_background_trade_result = res
             except Exception as e:
-                print(f"⚠️ [Background Auto-Trader] Error: {e}")
+                print(f"⚠️ [Background Auto-Trader] Error: {e}", flush=True)
 
             time.sleep(getattr(config, "REFRESH_INTERVAL", 3))
 
@@ -339,8 +344,6 @@ def test_key_api():
 @app.route("/api/market")
 def market_data():
 
-    global last_auto_trade_pair
-
     data = analyze_market()
 
     if data is None:
@@ -352,13 +355,6 @@ def market_data():
             "message": "Unable to fetch enough exchange prices."
 
         }), 503
-
-
-    auto_trade_result = None
-
-    if config.AUTO_TRADE_ENABLED:
-        if data["net_profit"] >= config.MIN_PROFIT:
-            auto_trade_result = execute_paper_trade(data)
 
 
     portfolio = get_portfolio()
@@ -394,7 +390,7 @@ def market_data():
 
         },
 
-        "auto_trade": auto_trade_result
+        "auto_trade": last_background_trade_result
 
     })
 
