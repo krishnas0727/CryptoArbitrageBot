@@ -60,9 +60,6 @@ def start_background_auto_trader():
                             last_background_trade_result = res
                             trade = res.get("trade", {})
                             print(f"⚡ [Background Auto-Trader] Executed: {trade.get('buy_exchange')} ➔ {trade.get('sell_exchange')} | Profit: +${trade.get('profit', 0):.2f} USDT", flush=True)
-                        else:
-                            if res:
-                                last_background_trade_result = res
             except Exception as e:
                 print(f"⚠️ [Background Auto-Trader] Error: {e}", flush=True)
 

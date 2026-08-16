@@ -995,9 +995,11 @@ function triggerDesktopNotification(trade) {
         const profit = Number(trade.profit || 0).toFixed(2);
         
         try {
+            // Use unique tag per trade so Windows/Browser pops up fresh banner every single trade
+            const uniqueTag = "auto-trade-" + (trade.buy_order_id || trade.created_at || Date.now());
             new Notification("⚡ Auto Trade Executed & Saved!", {
                 body: `${buyEx} ➔ ${sellEx} | Profit: +$${profit} USDT`,
-                tag: "auto-trade-notification"
+                tag: uniqueTag
             });
         } catch(e) {}
     }
@@ -1073,7 +1075,7 @@ function checkAutoTradePopup(market) {
     const trade = market.auto_trade.trade;
     if (!trade) return;
 
-    const tradeKey = `${trade.created_at || ''}_${trade.buy || ''}_${trade.sell || ''}_${trade.profit || ''}`;
+    const tradeKey = `${trade.buy_order_id || trade.created_at || ''}_${trade.buy || trade.buy_exchange || ''}_${trade.sell || trade.sell_exchange || ''}_${trade.profit || ''}`;
     if (tradeKey === lastPopupTradeKey) return;
     lastPopupTradeKey = tradeKey;
     
