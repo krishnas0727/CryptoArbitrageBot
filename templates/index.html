@@ -163,11 +163,6 @@
             <p id="pageSubtitle">Crypto Arbitrage Bot Overview</p>
         </div>
         <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
-            <!-- DESKTOP NOTIFICATION TOGGLE BUTTON -->
-            <button id="notifBtn" onclick="requestNotificationPermission(true)" style="background:#0c1526; border:1px solid #202e45; color:#cbd5e1; padding:6px 14px; border-radius:24px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.2s;">
-                🔔 Enable Notifications
-            </button>
-
             <!-- QUICK AUTO TRADE TOGGLE -->
             <div style="display:flex; align-items:center; gap:10px; background:#0c1526; border:1px solid #202e45; padding:6px 14px; border-radius:24px;">
                 <span style="font-size:12px; font-weight:600; color:#cbd5e1;">Auto Trade:</span>
@@ -927,50 +922,18 @@ function updateUIWithMarketData(result) {
    AUTO TRADE NOTIFICATIONS & POPUP
 ===================================================== */
 
-function updateNotifBtnUI() {
-    const btn = document.getElementById("notifBtn");
-    if (!btn || !("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
-        btn.innerHTML = "🔔 Notifications: ACTIVE 🟢";
-        btn.style.borderColor = "#22c55e";
-        btn.style.color = "#4ade80";
-        btn.style.background = "#052e16";
-    } else if (Notification.permission === "denied") {
-        btn.innerHTML = "🔔 Notifications: BLOCKED 🔴";
-        btn.style.borderColor = "#ef4444";
-        btn.style.color = "#fca5a5";
-        btn.style.background = "#450a0a";
-    } else {
-        btn.innerHTML = "🔔 Enable Notifications";
-        btn.style.borderColor = "#202e45";
-        btn.style.color = "#cbd5e1";
-        btn.style.background = "#0c1526";
-    }
-}
-
-function requestNotificationPermission(userTriggered = false) {
+function requestNotificationPermission() {
     if (!("Notification" in window)) return;
-
-    if (userTriggered || Notification.permission === "default") {
-        Notification.requestPermission().then(permission => {
-            updateNotifBtnUI();
-            if (permission === "granted" && userTriggered) {
-                try {
-                    new Notification("🔔 System Notifications Activated!", {
-                        body: "You will now receive instant popups whenever automated arbitrage trades complete.",
-                        tag: "test-notification"
-                    });
-                } catch(e) {}
-            }
-        });
-    } else {
-        updateNotifBtnUI();
+    if (Notification.permission === "default") {
+        Notification.requestPermission();
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    updateNotifBtnUI();
+    requestNotificationPermission();
+});
+window.addEventListener("load", () => {
+    requestNotificationPermission();
 });
 
 function playSuccessChime() {
