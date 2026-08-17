@@ -388,7 +388,7 @@ def market_data():
 
         },
 
-        "auto_trade": last_background_trade_result if getattr(config, "AUTO_TRADE_ENABLED", True) else None
+        "auto_trade": ({"success": True, "trade": get_latest_trade()} if get_latest_trade() else last_background_trade_result) if getattr(config, "AUTO_TRADE_ENABLED", True) else None
 
     })
 
