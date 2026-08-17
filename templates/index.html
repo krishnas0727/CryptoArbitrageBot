@@ -1028,6 +1028,9 @@ function closeAutoTradePopup() {
 }
 
 function checkAutoTradePopup(market) {
+    // If Auto Trade is OFF in settings, do NOT trigger any automatic trade notifications
+    if (!market.settings || !market.settings.auto_trade) return;
+
     if (!market.auto_trade || !market.auto_trade.success) return;
     const trade = market.auto_trade.trade;
     if (!trade) return;
