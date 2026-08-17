@@ -542,7 +542,7 @@
                     <div>
                         <label style="display:block; color:#94a3b8; font-size:11px; font-weight:600; margin-bottom:4px;">SLIPPAGE SIM</label>
                         <label class="switch" style="margin-top:2px;">
-                            <input type="checkbox" id="slippageToggle" checked>
+                            <input type="checkbox" id="slippageToggle" checked onchange="toggleSlippageSim(this.checked)">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -1302,13 +1302,31 @@ async function loadSettings() {
         if (document.getElementById("tradingModeSelect")) document.getElementById("tradingModeSelect").value = s.trading_mode || "LIVE";
         if (document.getElementById("tradingSymbolSelect")) document.getElementById("tradingSymbolSelect").value = s.symbol || "BTC/USDT";
         if (document.getElementById("tradeAmount")) document.getElementById("tradeAmount").value = s.trade_amount || 1000;
-        if (document.getElementById("slippagePct")) document.getElementById("slippagePct").value = s.slippage_pct || 0.05;
-        if (document.getElementById("slippageToggle")) document.getElementById("slippageToggle").checked = s.slippage_enabled !== false;
+        const slipToggle = document.getElementById("slippageToggle");
+        if (slipToggle && document.activeElement !== slipToggle) {
+            slipToggle.checked = s.slippage_enabled !== false;
+        }
 
         updateAutoTradeUI(s.auto_trade);
         updateCurrentConfiguration(s);
     } catch (e) {
         console.error("Settings load error:", e);
+    }
+}
+
+async function toggleSlippageSim(enabled) {
+    try {
+        const response = await fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slippage_enabled: Boolean(enabled) })
+        });
+        const result = await response.json();
+        if (result.success && result.settings) {
+            console.log("Slippage SIM updated:", result.settings.slippage_enabled);
+        }
+    } catch (e) {
+        console.error("Failed to toggle Slippage SIM:", e);
     }
 }
 

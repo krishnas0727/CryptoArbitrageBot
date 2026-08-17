@@ -320,7 +320,7 @@
                 <div>
                     <label style="display:block; color:#94a3b8; font-size:12px; font-weight:600; margin-bottom:6px;">SLIPPAGE SIMULATION</label>
                     <label class="switch" style="margin-top:4px;">
-                        <input type="checkbox" id="slippageToggle" checked>
+                        <input type="checkbox" id="slippageToggle" checked onchange="toggleSlippageSim(this.checked)">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -687,7 +687,9 @@ async function loadSettings() {
 
         if (tradingModeSelect) tradingModeSelect.value = settings.trading_mode || "PAPER";
         if (tradeAmount) tradeAmount.value = settings.trade_amount || 1000;
-        if (slippageToggle) slippageToggle.checked = settings.slippage_enabled !== false;
+        if (slippageToggle && document.activeElement !== slippageToggle) {
+            slippageToggle.checked = settings.slippage_enabled !== false;
+        }
 
         updateAutoTradeUI(settings.auto_trade);
         updateCurrentConfiguration(settings);
@@ -697,6 +699,22 @@ async function loadSettings() {
         saveMessage.innerText = "❌ Unable to load settings.";
     }
 
+}
+
+async function toggleSlippageSim(enabled) {
+    try {
+        const response = await fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slippage_enabled: Boolean(enabled) })
+        });
+        const result = await response.json();
+        if (result.success && result.settings) {
+            console.log("Slippage SIM updated:", result.settings.slippage_enabled);
+        }
+    } catch (e) {
+        console.error("Failed to toggle Slippage SIM:", e);
+    }
 }
 
 
