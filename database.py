@@ -1,8 +1,9 @@
 import sqlite3
 import os
+import json
 from datetime import datetime
 
-from config import DATABASE_NAME
+from config import DATABASE_NAME, BACKUP_JSON_PATH
 
 
 # ============================================================
@@ -130,8 +131,68 @@ def create_database():
     """)
 
     conn.commit()
-
     conn.close()
+
+    # Auto-restore trades from JSON backup if database was wiped on server restart
+    restore_trades_from_json_backup()
+
+
+def sync_trades_to_json_backup():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM trades ORDER BY id ASC")
+        rows = cursor.fetchall()
+        conn.close()
+
+        trades_list = [dict(row) for row in rows]
+        with open(BACKUP_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(trades_list, f, indent=2)
+    except Exception as e:
+        print(f"⚠️ JSON backup sync error: {e}", flush=True)
+
+
+def restore_trades_from_json_backup():
+    if not os.path.exists(BACKUP_JSON_PATH):
+        return
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM trades")
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            with open(BACKUP_JSON_PATH, "r", encoding="utf-8") as f:
+                backup_trades = json.load(f)
+
+            if backup_trades and isinstance(backup_trades, list) and len(backup_trades) > 0:
+                print(f"📦 Restoring {len(backup_trades)} trades from persistent JSON backup...", flush=True)
+                for trade in backup_trades:
+                    cursor.execute("""
+                        INSERT INTO trades (
+                            buy_exchange, sell_exchange, buy_price, sell_price, fees, profit,
+                            buy_order_id, sell_order_id, btc_amount, slippage, trade_amount, mode, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        trade.get("buy_exchange") or trade.get("buy", ""),
+                        trade.get("sell_exchange") or trade.get("sell", ""),
+                        float(trade.get("buy_price", 0.0)),
+                        float(trade.get("sell_price", 0.0)),
+                        float(trade.get("fees", 0.0)),
+                        float(trade.get("profit", 0.0)),
+                        trade.get("buy_order_id", ""),
+                        trade.get("sell_order_id", ""),
+                        float(trade.get("btc_amount", 0.0)),
+                        float(trade.get("slippage", 0.0)),
+                        float(trade.get("trade_amount", 0.0)),
+                        trade.get("mode", "PAPER"),
+                        trade.get("created_at") or datetime.now().astimezone().isoformat()
+                    ))
+                conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ Restore trades from JSON backup error: {e}", flush=True)
 
 
 # ============================================================
@@ -349,6 +410,9 @@ def save_trade(trade):
 
     conn.commit()
     conn.close()
+
+    # Sync to persistent JSON backup file
+    sync_trades_to_json_backup()
 
 
 # ============================================================

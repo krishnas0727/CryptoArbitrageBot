@@ -54,5 +54,8 @@ REFRESH_INTERVAL = 2
 
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_NAME = os.path.join(BASE_DIR, "data", "trades.db")
+DATA_DIR = os.environ.get("DATA_DIR") or os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE_NAME = os.environ.get("DATABASE_PATH") or os.path.join(DATA_DIR, "trades.db")
+BACKUP_JSON_PATH = os.path.join(DATA_DIR, "trades_history_backup.json")
 
