@@ -26,6 +26,12 @@ import json
 
 proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
 
+if proxy_url:
+    os.environ["HTTP_PROXY"] = proxy_url
+    os.environ["HTTPS_PROXY"] = proxy_url
+    os.environ["http_proxy"] = proxy_url
+    os.environ["https_proxy"] = proxy_url
+
 binance_opts = {"enableRateLimit": True, "timeout": 20000}
 bybit_opts = {
     "enableRateLimit": True,
@@ -52,6 +58,13 @@ exchanges = {
     "Bybit": ccxt.bybit(bybit_opts),
     "Coinbase": ccxt.coinbase(coinbase_opts)
 }
+
+if proxy_url:
+    for ex in exchanges.values():
+        try:
+            ex.session.proxies = {"http": proxy_url, "https": proxy_url}
+        except Exception:
+            pass
 
 
 # ============================================================
@@ -93,6 +106,12 @@ def get_authenticated_exchange(name):
             config_opts["options"] = {"defaultType": "spot"}
 
         ex_instance = exchange_class(config_opts)
+        if proxy_url and hasattr(ex_instance, "session"):
+            try:
+                ex_instance.session.proxies = {"http": proxy_url, "https": proxy_url}
+            except Exception:
+                pass
+
         return ex_instance, None
     except Exception as e:
         return None, f"Failed to initialize {name}: {str(e)}"
