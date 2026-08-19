@@ -72,6 +72,14 @@ def get_authenticated_exchange(name):
             "timeout": 20000
         }
 
+        # Check for proxy configuration in environment
+        proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+        if proxy_url:
+            config_opts["proxies"] = {
+                "http": proxy_url,
+                "https": proxy_url
+            }
+
         if name.lower() == "bybit":
             config_opts["urls"] = {
                 "api": {
@@ -121,15 +129,37 @@ def test_exchange_connection(name):
             "success": False,
             "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}."
         }
-    except ccxt.NetworkError as e:
+    except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+        err_msg = str(e)
+        if "restricted location" in err_msg or "451" in err_msg:
+            return {
+                "success": False,
+                "message": f"🌐 Binance Geo-Block (HTTP 451): Render server IP is blocked by Binance.com due to cloud hosting restrictions. Solution: Run the app locally on your PC/laptop, or configure a proxy."
+            }
+        elif "403 Forbidden" in err_msg or "CloudFront" in err_msg or "access from your country" in err_msg:
+            return {
+                "success": False,
+                "message": f"🌐 Bybit Cloud Block (HTTP 403): Bybit CloudFront blocks cloud server IPs (Render/AWS). Solution: Run the app locally on your PC/laptop, or configure a proxy."
+            }
         return {
             "success": False,
-            "message": f"🌐 Network Error connecting to {name}: {str(e)}"
+            "message": f"🌐 Network Error connecting to {name}: {err_msg}"
         }
     except Exception as e:
+        err_msg = str(e)
+        if "restricted location" in err_msg or "451" in err_msg:
+            return {
+                "success": False,
+                "message": f"🌐 Binance Geo-Block (HTTP 451): Render server IP is blocked by Binance.com due to cloud hosting restrictions. Solution: Run the app locally on your PC/laptop, or configure a proxy."
+            }
+        elif "403 Forbidden" in err_msg or "CloudFront" in err_msg or "access from your country" in err_msg:
+            return {
+                "success": False,
+                "message": f"🌐 Bybit Cloud Block (HTTP 403): Bybit CloudFront blocks cloud server IPs (Render/AWS). Solution: Run the app locally on your PC/laptop, or configure a proxy."
+            }
         return {
             "success": False,
-            "message": f"❌ {name} Connection Error: {str(e)}"
+            "message": f"❌ {name} Connection Error: {err_msg}"
         }
 
 
