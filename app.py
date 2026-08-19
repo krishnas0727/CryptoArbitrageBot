@@ -53,7 +53,7 @@ def start_background_auto_trader():
         print("🤖 Background Auto-Trader Thread Started...", flush=True)
         while True:
             try:
-                if getattr(config, "AUTO_TRADE_ENABLED", True):
+                if getattr(config, "AUTO_TRADE_ENABLED", False) is True:
                     data = analyze_market()
                     if data and data.get("net_profit", 0) >= getattr(config, "MIN_PROFIT", 0.01):
                         res = execute_paper_trade(data)
