@@ -502,22 +502,20 @@ def get_latest_trade():
 # ============================================================
 
 def delete_all_trades():
-
     conn = get_connection()
-
     cursor = conn.cursor()
-
-    cursor.execute("""
-        DELETE FROM trades
-    """)
-
+    cursor.execute("DELETE FROM trades")
     conn.commit()
-
     conn.close()
 
-    print(
-        "✅ All old trades deleted"
-    )
+    if os.path.exists(BACKUP_JSON_PATH):
+        try:
+            with open(BACKUP_JSON_PATH, "w", encoding="utf-8") as f:
+                json.dump([], f)
+        except Exception as e:
+            print(f"Error clearing JSON backup: {e}", flush=True)
+
+    print("All old trades deleted successfully.", flush=True)
 
 
 # ============================================================

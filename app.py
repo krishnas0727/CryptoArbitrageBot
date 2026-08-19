@@ -413,11 +413,12 @@ def trades_api():
 
 @app.route("/api/trades/clear", methods=["POST"])
 def clear_trades_api():
-    from database import delete_all_trades
+    from database import delete_all_trades, reset_portfolio
     delete_all_trades()
+    reset_portfolio()
     return jsonify({
         "success": True,
-        "message": "All trade history log cleared successfully."
+        "message": "All trade history log cleared and paper balance reset successfully."
     })
 
 
