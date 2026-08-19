@@ -24,30 +24,33 @@ from database import get_api_key
 import urllib.request
 import json
 
-exchanges = {
-    "Binance": ccxt.binance({
-        "enableRateLimit": True,
-        "timeout": 20000
-    }),
+proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
 
-    "Bybit": ccxt.bybit({
-        "enableRateLimit": True,
-        "timeout": 20000,
-        "urls": {
-            "api": {
-                "public": "https://api.bytick.com",
-                "private": "https://api.bytick.com"
-            }
-        },
-        "options": {
-            "defaultType": "spot"
+binance_opts = {"enableRateLimit": True, "timeout": 20000}
+bybit_opts = {
+    "enableRateLimit": True,
+    "timeout": 20000,
+    "urls": {
+        "api": {
+            "public": "https://api.bytick.com",
+            "private": "https://api.bytick.com"
         }
-    }),
+    },
+    "options": {"defaultType": "spot"}
+}
+coinbase_opts = {"enableRateLimit": True, "timeout": 20000}
 
-    "Coinbase": ccxt.coinbase({
-        "enableRateLimit": True,
-        "timeout": 20000
-    })
+if proxy_url:
+    for opts in (binance_opts, bybit_opts, coinbase_opts):
+        opts["httpsProxy"] = proxy_url
+        opts["httpProxy"] = proxy_url
+        if "socks" in proxy_url.lower():
+            opts["socksProxy"] = proxy_url
+
+exchanges = {
+    "Binance": ccxt.binance(binance_opts),
+    "Bybit": ccxt.bybit(bybit_opts),
+    "Coinbase": ccxt.coinbase(coinbase_opts)
 }
 
 
@@ -75,6 +78,10 @@ def get_authenticated_exchange(name):
         # Check for proxy configuration in environment
         proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
         if proxy_url:
+            config_opts["httpsProxy"] = proxy_url
+            config_opts["httpProxy"] = proxy_url
+            if "socks" in proxy_url.lower():
+                config_opts["socksProxy"] = proxy_url
             config_opts["proxies"] = {
                 "http": proxy_url,
                 "https": proxy_url
