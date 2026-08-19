@@ -115,6 +115,9 @@ def test_exchange_connection(name):
             "message": err
         }
 
+    proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+    proxy_status = f" [Proxy Active: {proxy_url[:12]}...]" if proxy_url else " [Proxy Active: NO (EXCHANGE_PROXY Env Var missing on Render)]"
+
     try:
         balance = ex_instance.fetch_balance()
         usdt_free = balance.get("free", {}).get("USDT", 0.0) or balance.get("free", {}).get("USD", 0.0)
@@ -122,51 +125,51 @@ def test_exchange_connection(name):
 
         return {
             "success": True,
-            "message": f"Successfully connected to {name}!",
+            "message": f"Successfully connected to {name}!{proxy_status}",
             "usdt_balance": round(float(usdt_free or 0.0), 2),
             "btc_balance": round(float(btc_free or 0.0), 6)
         }
     except ccxt.AuthenticationError as e:
         return {
             "success": False,
-            "message": f"🔑 Authentication Error: Invalid API Key or Secret for {name}."
+            "message": f"🔑 Authentication Error: Invalid API Key or Secret for {name}.{proxy_status}"
         }
     except ccxt.PermissionDenied as e:
         return {
             "success": False,
-            "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}."
+            "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}.{proxy_status}"
         }
     except (ccxt.NetworkError, ccxt.ExchangeError) as e:
         err_msg = str(e)
         if "restricted location" in err_msg or "451" in err_msg:
             return {
                 "success": False,
-                "message": f"🌐 Binance Geo-Block (HTTP 451): Render server IP is blocked by Binance.com due to cloud hosting restrictions. Solution: Run the app locally on your PC/laptop, or configure a proxy."
+                "message": f"🌐 Binance Geo-Block (HTTP 451): Render server IP is blocked by Binance.com.{proxy_status} Ensure EXCHANGE_PROXY is set in Render Env Vars & Save Changes was clicked."
             }
         elif "403 Forbidden" in err_msg or "CloudFront" in err_msg or "access from your country" in err_msg:
             return {
                 "success": False,
-                "message": f"🌐 Bybit Cloud Block (HTTP 403): Bybit CloudFront blocks cloud server IPs (Render/AWS). Solution: Run the app locally on your PC/laptop, or configure a proxy."
+                "message": f"🌐 Bybit Cloud Block (HTTP 403): Bybit CloudFront blocks cloud server IPs.{proxy_status} Ensure EXCHANGE_PROXY is set in Render Env Vars & Save Changes was clicked."
             }
         return {
             "success": False,
-            "message": f"🌐 Network Error connecting to {name}: {err_msg}"
+            "message": f"🌐 Network Error connecting to {name}: {err_msg}{proxy_status}"
         }
     except Exception as e:
         err_msg = str(e)
         if "restricted location" in err_msg or "451" in err_msg:
             return {
                 "success": False,
-                "message": f"🌐 Binance Geo-Block (HTTP 451): Render server IP is blocked by Binance.com due to cloud hosting restrictions. Solution: Run the app locally on your PC/laptop, or configure a proxy."
+                "message": f"🌐 Binance Geo-Block (HTTP 451): Render server IP is blocked by Binance.com.{proxy_status} Ensure EXCHANGE_PROXY is set in Render Env Vars & Save Changes was clicked."
             }
         elif "403 Forbidden" in err_msg or "CloudFront" in err_msg or "access from your country" in err_msg:
             return {
                 "success": False,
-                "message": f"🌐 Bybit Cloud Block (HTTP 403): Bybit CloudFront blocks cloud server IPs (Render/AWS). Solution: Run the app locally on your PC/laptop, or configure a proxy."
+                "message": f"🌐 Bybit Cloud Block (HTTP 403): Bybit CloudFront blocks cloud server IPs.{proxy_status} Ensure EXCHANGE_PROXY is set in Render Env Vars & Save Changes was clicked."
             }
         return {
             "success": False,
-            "message": f"❌ {name} Connection Error: {err_msg}"
+            "message": f"❌ {name} Connection Error: {err_msg}{proxy_status}"
         }
 
 
