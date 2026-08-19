@@ -109,17 +109,14 @@ def get_portfolio_api():
 
 @app.route("/api/portfolio/reset", methods=["POST"])
 def reset_portfolio_api():
-
-    reset_portfolio(config.INITIAL_BALANCE)
+    from database import delete_all_trades, reset_portfolio, get_portfolio
+    delete_all_trades()
+    reset_portfolio(0.00)
 
     return jsonify({
-
         "success": True,
-
-        "message": "Paper wallet balance reset to $10,000 USDT.",
-
+        "message": "Wallet balance reset to $0.00 USDT.",
         "portfolio": get_portfolio()
-
     })
 
 
