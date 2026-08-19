@@ -6,11 +6,7 @@
 SYMBOL = "BTC/USDT"
 
 
-# ==========================================
-# PAPER TRADING & EXECUTION
-# ==========================================
-
-INITIAL_BALANCE = 10000.00
+INITIAL_BALANCE = 0.00
 DEFAULT_TRADE_AMOUNT = 1000.00  # USDT max per trade
 DYNAMIC_BALANCE_TRADING = True  # Auto-adjust trade amount to available USDT balance
 MIN_TRADE_USDT = 5.0            # Minimum USDT required to execute a live trade

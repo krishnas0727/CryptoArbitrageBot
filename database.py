@@ -116,7 +116,7 @@ def create_database():
     if cursor.fetchone()[0] == 0:
         cursor.execute("""
             INSERT INTO portfolio (id, usdt_balance, binance_usdt, bybit_usdt, kraken_usdt, coinbase_usdt)
-            VALUES (1, 10000.00, 3333.33, 3333.33, 3333.34, 3333.34)
+            VALUES (1, 0.00, 0.00, 0.00, 0.00, 0.00)
         """)
 
 
@@ -282,11 +282,11 @@ def get_portfolio():
         return d
 
     return {
-        "usdt_balance": 10000.00,
-        "binance_usdt": 3333.33,
-        "bybit_usdt": 3333.33,
-        "kraken_usdt": 3333.34,
-        "coinbase_usdt": 3333.34,
+        "usdt_balance": 0.00,
+        "binance_usdt": 0.00,
+        "bybit_usdt": 0.00,
+        "kraken_usdt": 0.00,
+        "coinbase_usdt": 0.00,
         "binance_btc": 0.0,
         "bybit_btc": 0.0,
         "kraken_btc": 0.0,
@@ -314,11 +314,11 @@ def update_portfolio(portfolio):
             updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
     """, (
-        float(portfolio.get("usdt_balance", 10000.0)),
-        float(portfolio.get("binance_usdt", 3333.33)),
-        float(portfolio.get("bybit_usdt", 3333.33)),
-        float(portfolio.get("kraken_usdt", 3333.34)),
-        float(portfolio.get("coinbase_usdt", 3333.34)),
+        float(portfolio.get("usdt_balance", 0.0)),
+        float(portfolio.get("binance_usdt", 0.0)),
+        float(portfolio.get("bybit_usdt", 0.0)),
+        float(portfolio.get("kraken_usdt", 0.0)),
+        float(portfolio.get("coinbase_usdt", 0.0)),
         float(portfolio.get("binance_btc", 0.0)),
         float(portfolio.get("bybit_btc", 0.0)),
         float(portfolio.get("kraken_btc", 0.0)),
@@ -330,9 +330,9 @@ def update_portfolio(portfolio):
     conn.close()
 
 
-def reset_portfolio(initial_usdt=10000.00):
+def reset_portfolio(initial_usdt=0.00):
 
-    per_ex = round(initial_usdt / 3, 2)
+    per_ex = round(initial_usdt / 3, 2) if initial_usdt > 0 else 0.00
 
     conn = get_connection()
 
@@ -351,7 +351,7 @@ def reset_portfolio(initial_usdt=10000.00):
             coinbase_btc = 0.0,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
-    """, (initial_usdt, per_ex, per_ex, round(initial_usdt - (per_ex * 2), 2), round(initial_usdt - (per_ex * 2), 2)))
+    """, (initial_usdt, per_ex, per_ex, per_ex, per_ex))
 
     conn.commit()
 
