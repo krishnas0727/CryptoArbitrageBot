@@ -131,7 +131,11 @@ def test_exchange_connection(name):
         }
 
     proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
-    proxy_status = f" [Proxy Active: {proxy_url[:12]}...]" if proxy_url else " [Proxy Active: NO (EXCHANGE_PROXY Env Var missing on Render)]"
+    if proxy_url:
+        clean_proxy = proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url
+        proxy_status = f" [Proxy Active: {clean_proxy}]"
+    else:
+        proxy_status = " [Proxy Active: NO (EXCHANGE_PROXY Env Var missing on Render)]"
 
     try:
         balance = ex_instance.fetch_balance()
