@@ -865,7 +865,7 @@ function updateUIWithMarketData(result) {
 
     // Summary Cards & Wallet Balances
     if (result.summary) {
-        document.getElementById("balance").innerText = Number(result.summary.balance || 10000).toFixed(2);
+        document.getElementById("balance").innerText = Number(result.summary.balance !== undefined && result.summary.balance !== null ? result.summary.balance : 0.00).toFixed(2);
         document.getElementById("profit").innerText = Number(result.summary.profit || 0).toFixed(2);
         document.getElementById("trades").innerText = result.summary.trades || 0;
 
