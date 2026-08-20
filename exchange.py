@@ -32,7 +32,14 @@ if proxy_url:
     os.environ["http_proxy"] = proxy_url
     os.environ["https_proxy"] = proxy_url
 
-binance_opts = {"enableRateLimit": True, "timeout": 20000}
+binance_opts = {
+    "enableRateLimit": True,
+    "timeout": 20000,
+    "options": {
+        "recvWindow": 20000,
+        "adjustForTimeDifference": True
+    }
+}
 bybit_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
@@ -42,7 +49,11 @@ bybit_opts = {
             "private": "https://api.bytick.com"
         }
     },
-    "options": {"defaultType": "spot"}
+    "options": {
+        "defaultType": "spot",
+        "recvWindow": 20000,
+        "adjustForTimeDifference": True
+    }
 }
 coinbase_opts = {"enableRateLimit": True, "timeout": 20000}
 
@@ -85,7 +96,11 @@ def get_authenticated_exchange(name):
             "apiKey": key_info["api_key"],
             "secret": key_info["api_secret"],
             "enableRateLimit": True,
-            "timeout": 20000
+            "timeout": 20000,
+            "options": {
+                "recvWindow": 20000,
+                "adjustForTimeDifference": True
+            }
         }
 
         # Check for proxy configuration in environment
@@ -103,7 +118,7 @@ def get_authenticated_exchange(name):
                     "private": "https://api.bytick.com"
                 }
             }
-            config_opts["options"] = {"defaultType": "spot"}
+            config_opts["options"]["defaultType"] = "spot"
 
         ex_instance = exchange_class(config_opts)
         if proxy_url and hasattr(ex_instance, "session"):
