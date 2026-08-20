@@ -36,7 +36,7 @@ binance_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
     "options": {
-        "recvWindow": 20000,
+        "recvWindow": 60000,
         "adjustForTimeDifference": True
     }
 }
@@ -51,7 +51,7 @@ bybit_opts = {
     },
     "options": {
         "defaultType": "spot",
-        "recvWindow": 20000,
+        "recvWindow": 60000,
         "adjustForTimeDifference": True
     }
 }
@@ -98,7 +98,7 @@ def get_authenticated_exchange(name):
             "enableRateLimit": True,
             "timeout": 20000,
             "options": {
-                "recvWindow": 20000,
+                "recvWindow": 60000,
                 "adjustForTimeDifference": True
             }
         }
@@ -124,6 +124,12 @@ def get_authenticated_exchange(name):
         if proxy_url and hasattr(ex_instance, "session"):
             try:
                 ex_instance.session.proxies = {"http": proxy_url, "https": proxy_url}
+            except Exception:
+                pass
+
+        if hasattr(ex_instance, "load_time_difference"):
+            try:
+                ex_instance.load_time_difference()
             except Exception:
                 pass
 
@@ -153,6 +159,11 @@ def test_exchange_connection(name):
         proxy_status = " [Proxy Active: NO (EXCHANGE_PROXY Env Var missing on Render)]"
 
     try:
+        if hasattr(ex_instance, "load_time_difference"):
+            try:
+                ex_instance.load_time_difference()
+            except Exception:
+                pass
         balance = ex_instance.fetch_balance()
         usdt_free = balance.get("free", {}).get("USDT", 0.0) or balance.get("free", {}).get("USD", 0.0)
         btc_free = balance.get("free", {}).get("BTC", 0.0)
