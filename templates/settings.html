@@ -846,12 +846,20 @@ async function loadApiKeys() {
 
         const keys = result.keys || {};
         ["Binance", "Bybit", "Coinbase"].forEach(ex => {
-            const badge = document.getElementById(`${ex.toLowerCase()}KeyBadge`);
-            const keyInfo = keys[ex] || keys[ex.toLowerCase()] || keys[ex.capitalize ? ex.capitalize() : ex];
-            if (badge && keyInfo) {
-                badge.innerText = "🔑 Key Active (" + keyInfo.api_key_masked + ")";
-                badge.style.background = "#132b20";
-                badge.style.color = "#22c55e";
+            const exLower = ex.toLowerCase();
+            const badge = document.getElementById(`${exLower}KeyBadge`);
+            const msg = document.getElementById(`${exLower}KeyMsg`);
+            const keyInfo = keys[ex] || keys[exLower] || keys[ex.capitalize ? ex.capitalize() : ex];
+            if (keyInfo) {
+                if (badge) {
+                    badge.innerText = "🔑 Key Active (" + keyInfo.api_key_masked + ")";
+                    badge.style.background = "#132b20";
+                    badge.style.color = "#22c55e";
+                }
+                if (msg && (!msg.innerText || msg.innerText.includes("⏳"))) {
+                    msg.style.color = "#22c55e";
+                    msg.innerText = "🟢 Connected & Active (Paper Trading & Bot Engine Ready)";
+                }
             } else if (badge) {
                 badge.innerText = "Not Configured";
                 badge.style.background = "#1e293b";
