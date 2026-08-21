@@ -1458,7 +1458,7 @@ async function loadApiKeys() {
                     badge.style.background = "#132b20";
                     badge.style.color = "#22c55e";
                 }
-                if (msg && (!msg.innerText || !msg.innerText.includes("Balance:"))) {
+                if (msg) {
                     msg.style.color = "#22c55e";
                     msg.innerText = "Connected successfully!";
                 }
