@@ -161,15 +161,17 @@ def test_exchange_connection(name):
         btc_free = 0.0
 
         if name.lower() == "bybit":
+            bybit_success = False
             for acc in ["UNIFIED", "SPOT"]:
                 try:
                     res = ex_instance.privateGetV5AccountWalletBalance({"accountType": acc})
                     if res and res.get("retCode") == 0:
+                        bybit_success = True
                         account_list = res.get("result", {}).get("list", [])
                         for item in account_list:
                             for coin_info in item.get("coin", []):
                                 c_name = coin_info.get("coin")
-                                w_bal = float(coin_info.get("walletBalance") or coin_info.get("equity") or 0.0)
+                                w_bal = float(coin_info.get("walletBalance") or coin_info.get("equity") or coin_info.get("availableToWithdraw") or 0.0)
                                 if c_name == "USDT":
                                     usdt_free = max(usdt_free, w_bal)
                                 elif c_name == "BTC":
@@ -179,7 +181,7 @@ def test_exchange_connection(name):
                 except Exception:
                     pass
 
-            if usdt_free > 0 or btc_free > 0:
+            if bybit_success:
                 return {
                     "success": True,
                     "message": f"🟢 Connected! Balance: ${round(float(usdt_free or 0.0), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC",
