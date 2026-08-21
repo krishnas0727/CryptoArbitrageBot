@@ -212,6 +212,40 @@ def test_exchange_connection(name):
         }
 
 
+def get_all_live_balances():
+    total_usdt = 0.0
+    binance_usdt = 0.0
+    bybit_usdt = 0.0
+    binance_btc = 0.0
+    bybit_btc = 0.0
+
+    # Binance
+    bin_res = test_exchange_connection("Binance")
+    if bin_res.get("success"):
+        binance_usdt = float(bin_res.get("usdt_balance", 0.0))
+        binance_btc = float(bin_res.get("btc_balance", 0.0))
+
+    # Bybit
+    byb_res = test_exchange_connection("Bybit")
+    if byb_res.get("success"):
+        bybit_usdt = float(byb_res.get("usdt_balance", 0.0))
+        bybit_btc = float(byb_res.get("btc_balance", 0.0))
+
+    total_usdt = round(binance_usdt + bybit_usdt, 2)
+
+    return {
+        "usdt_balance": total_usdt,
+        "binance_usdt": binance_usdt,
+        "bybit_usdt": bybit_usdt,
+        "kraken_usdt": 0.0,
+        "coinbase_usdt": 0.0,
+        "binance_btc": binance_btc,
+        "bybit_btc": bybit_btc,
+        "kraken_btc": 0.0,
+        "coinbase_btc": 0.0
+    }
+
+
 def get_direct_price(name, symbol=SYMBOL):
     clean_sym = symbol.replace('/', '')
     import ssl

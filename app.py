@@ -91,8 +91,15 @@ def home():
 
 @app.route("/api/portfolio", methods=["GET"])
 def get_portfolio_api():
-
-    portfolio = get_portfolio()
+    mode = getattr(config, "TRADING_MODE", "PAPER")
+    if mode == "LIVE":
+        try:
+            from exchange import get_all_live_balances
+            portfolio = get_all_live_balances()
+        except Exception:
+            portfolio = get_portfolio()
+    else:
+        portfolio = get_portfolio()
 
     return jsonify({
 
