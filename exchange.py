@@ -194,17 +194,33 @@ def test_exchange_connection(name):
     except ccxt.AuthenticationError as e:
         return {
             "success": False,
-            "message": f"🔑 Authentication Error: Invalid API Key or Secret for {name}."
+            "message": f"🔑 Invalid API Key or Secret for {name}."
         }
     except ccxt.PermissionDenied as e:
+        err_msg = str(e)
+        if "restricted location" in err_msg.lower() or "451" in err_msg:
+            return {
+                "success": False,
+                "message": f"⚠️ {name} API is location-restricted on US Server IP. Use Bybit or Paper Mode."
+            }
         return {
             "success": False,
-            "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}."
+            "message": f"🚫 API Key lacks trading permissions on {name}."
         }
     except Exception as e:
+        err_msg = str(e)
+        if "restricted location" in err_msg.lower() or "451" in err_msg:
+            return {
+                "success": False,
+                "message": f"⚠️ {name} API is location-restricted on US Server IP. Use Bybit or Paper Mode."
+            }
+        # Clean up raw URL tracebacks from error message
+        clean_msg = err_msg.split('\n')[0].split('{')[0].strip()
+        if not clean_msg or len(clean_msg) > 100:
+            clean_msg = f"{name} API Connection Issue"
         return {
             "success": False,
-            "message": f"❌ {name} API Error: {str(e)}"
+            "message": f"❌ {clean_msg}"
         }
 
 
