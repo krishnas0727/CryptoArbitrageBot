@@ -25,6 +25,8 @@ import urllib.request
 import json
 
 proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+if not proxy_url and (os.environ.get("PYTHONANYWHERE_DOMAIN") or os.environ.get("PYTHONANYWHERE_SITE")):
+    proxy_url = "http://proxy.server:3128"
 
 if proxy_url:
     os.environ["HTTP_PROXY"] = proxy_url
@@ -105,6 +107,8 @@ def get_authenticated_exchange(name):
 
         # Check for proxy configuration in environment
         proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+        if not proxy_url and (os.environ.get("PYTHONANYWHERE_DOMAIN") or os.environ.get("PYTHONANYWHERE_SITE")):
+            proxy_url = "http://proxy.server:3128"
         if proxy_url:
             if "socks" in proxy_url.lower():
                 config_opts["socksProxy"] = proxy_url
