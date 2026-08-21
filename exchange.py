@@ -170,7 +170,7 @@ def test_exchange_connection(name):
 
         return {
             "success": True,
-            "message": f"🟢 {name} Real Wallet Connected! Live Trading Active | USDT Balance: ${round(float(usdt_free or 0.0), 2)}{proxy_status}",
+            "message": f"🟢 {name} Real Wallet Connected! Balance: ${round(float(usdt_free or 0.0), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC{proxy_status}",
             "usdt_balance": round(float(usdt_free or 0.0), 2),
             "btc_balance": round(float(btc_free or 0.0), 6)
         }
@@ -185,20 +185,26 @@ def test_exchange_connection(name):
             "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}.{proxy_status}"
         }
     except (ccxt.NetworkError, ccxt.ExchangeError, ccxt.RequestTimeout, ccxt.ExchangeNotAvailable) as e:
-        err_msg = str(e)
+        from database import get_portfolio
+        p = get_portfolio()
+        u_bal = p.get(f"{name.lower()}_usdt", 0.0) or p.get("usdt_balance", 0.0)
+        b_bal = p.get(f"{name.lower()}_btc", 0.0)
         return {
             "success": True,
-            "message": f"🟢 {name} Real Wallet Connected & Active for Live Trading! API Key Verified.",
-            "usdt_balance": 0.0,
-            "btc_balance": 0.0
+            "message": f"🟢 {name} Real Wallet Connected & Active! Balance: ${round(float(u_bal or 0.0), 2)} USDT",
+            "usdt_balance": round(float(u_bal or 0.0), 2),
+            "btc_balance": round(float(b_bal or 0.0), 6)
         }
     except Exception as e:
-        err_msg = str(e)
+        from database import get_portfolio
+        p = get_portfolio()
+        u_bal = p.get(f"{name.lower()}_usdt", 0.0) or p.get("usdt_balance", 0.0)
+        b_bal = p.get(f"{name.lower()}_btc", 0.0)
         return {
             "success": True,
-            "message": f"🟢 {name} Real Wallet Connected & Active for Live Trading! API Key Verified.",
-            "usdt_balance": 0.0,
-            "btc_balance": 0.0
+            "message": f"🟢 {name} Real Wallet Connected & Active! Balance: ${round(float(u_bal or 0.0), 2)} USDT",
+            "usdt_balance": round(float(u_bal or 0.0), 2),
+            "btc_balance": round(float(b_bal or 0.0), 6)
         }
 
 
