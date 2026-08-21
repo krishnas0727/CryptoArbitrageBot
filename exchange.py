@@ -157,22 +157,37 @@ def test_exchange_connection(name):
             except Exception:
                 pass
 
-        balance = None
+        usdt_free = 0.0
+        btc_free = 0.0
+
         if name.lower() == "bybit":
-            for acc_type in ["UNIFIED", "SPOT", None]:
+            for acc in ["UNIFIED", "SPOT"]:
                 try:
-                    params = {"accountType": acc_type} if acc_type else {}
-                    b = ex_instance.fetch_balance(params)
-                    if b and (b.get("free", {}).get("USDT", 0) > 0 or b.get("total", {}).get("USDT", 0) > 0):
-                        balance = b
-                        break
-                    elif not balance:
-                        balance = b
+                    res = ex_instance.privateGetV5AccountWalletBalance({"accountType": acc})
+                    if res and res.get("retCode") == 0:
+                        account_list = res.get("result", {}).get("list", [])
+                        for item in account_list:
+                            for coin_info in item.get("coin", []):
+                                c_name = coin_info.get("coin")
+                                w_bal = float(coin_info.get("walletBalance") or coin_info.get("equity") or 0.0)
+                                if c_name == "USDT":
+                                    usdt_free = max(usdt_free, w_bal)
+                                elif c_name == "BTC":
+                                    btc_free = max(btc_free, w_bal)
+                        if usdt_free > 0:
+                            break
                 except Exception:
                     pass
 
-        if not balance:
-            balance = ex_instance.fetch_balance()
+            if usdt_free > 0 or btc_free > 0:
+                return {
+                    "success": True,
+                    "message": f"🟢 Connected! Balance: ${round(float(usdt_free or 0.0), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC",
+                    "usdt_balance": round(float(usdt_free or 0.0), 2),
+                    "btc_balance": round(float(btc_free or 0.0), 6)
+                }
+
+        balance = ex_instance.fetch_balance()
 
         usdt_free = (
             balance.get("free", {}).get("USDT") or
