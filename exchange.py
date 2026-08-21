@@ -170,19 +170,19 @@ def test_exchange_connection(name):
 
         return {
             "success": True,
-            "message": f"🟢 {name} Real Wallet Connected! Balance: ${round(float(usdt_free or 0.0), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC{proxy_status}",
+            "message": f"🟢 Connected! Balance: ${round(float(usdt_free or 0.0), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC",
             "usdt_balance": round(float(usdt_free or 0.0), 2),
             "btc_balance": round(float(btc_free or 0.0), 6)
         }
     except ccxt.AuthenticationError as e:
         return {
             "success": False,
-            "message": f"🔑 Authentication Error: Invalid API Key or Secret for {name}.{proxy_status}"
+            "message": f"🔑 Authentication Error: Invalid API Key or Secret for {name}."
         }
     except ccxt.PermissionDenied as e:
         return {
             "success": False,
-            "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}.{proxy_status}"
+            "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}."
         }
     except (ccxt.NetworkError, ccxt.ExchangeError, ccxt.RequestTimeout, ccxt.ExchangeNotAvailable) as e:
         from database import get_portfolio
@@ -191,7 +191,7 @@ def test_exchange_connection(name):
         b_bal = p.get(f"{name.lower()}_btc", 0.0)
         return {
             "success": True,
-            "message": f"🟢 {name} Real Wallet Connected & Active! Balance: ${round(float(u_bal or 0.0), 2)} USDT",
+            "message": f"🟢 Connected! Balance: ${round(float(u_bal or 0.0), 2)} USDT | {round(float(b_bal or 0.0), 6)} BTC",
             "usdt_balance": round(float(u_bal or 0.0), 2),
             "btc_balance": round(float(b_bal or 0.0), 6)
         }
@@ -202,7 +202,7 @@ def test_exchange_connection(name):
         b_bal = p.get(f"{name.lower()}_btc", 0.0)
         return {
             "success": True,
-            "message": f"🟢 {name} Real Wallet Connected & Active! Balance: ${round(float(u_bal or 0.0), 2)} USDT",
+            "message": f"🟢 Connected! Balance: ${round(float(u_bal or 0.0), 2)} USDT | {round(float(b_bal or 0.0), 6)} BTC",
             "usdt_balance": round(float(u_bal or 0.0), 2),
             "btc_balance": round(float(b_bal or 0.0), 6)
         }
