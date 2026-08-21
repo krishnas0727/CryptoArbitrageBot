@@ -159,7 +159,7 @@ def test_exchange_connection(name):
 
         balance = None
         if name.lower() == "bybit":
-            for acc_type in ["UNIFIED", "SPOT", "FUNDING", None]:
+            for acc_type in ["UNIFIED", "SPOT", None]:
                 try:
                     params = {"accountType": acc_type} if acc_type else {}
                     b = ex_instance.fetch_balance(params)
