@@ -1460,7 +1460,7 @@ async function loadApiKeys() {
                 }
                 if (msg && (!msg.innerText || msg.innerText.includes("⏳"))) {
                     msg.style.color = "#22c55e";
-                    msg.innerText = "🟢 Connected! Balance: $0 USDT | 0 BTC";
+                    msg.innerText = "Connected successfully!";
                 }
             } else if (badge) {
                 badge.innerText = "Not Configured";
@@ -1498,7 +1498,7 @@ async function saveApiKey(exchange) {
         const result = await response.json();
         if (result.success) {
             msg.style.color = "#22c55e";
-            msg.innerText = "✅ Saved successfully!";
+            msg.innerText = "✅ Connected successfully!";
             document.getElementById(`${exLower}ApiKey`).value = "";
             document.getElementById(`${exLower}ApiSecret`).value = "";
             loadApiKeys();
