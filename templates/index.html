@@ -208,7 +208,7 @@
 
             <div class="card">
                 <span>Execution Engine</span>
-                <h2 class="online" id="tradingModeBadge">● LIVE MODE</h2>
+                <h2 class="online" id="tradingModeBadge" style="color:#22c55e;">● LIVE REAL TRADING ENGINE</h2>
                 <small id="botSubStatus">Auto Arbitrage Active</small>
             </div>
         </section>
@@ -882,11 +882,10 @@ function updateUIWithMarketData(result) {
     }
 
     if (result.settings) {
-        if (result.settings.trading_mode) {
-            const badge = document.getElementById("tradingModeBadge");
-            if (badge) {
-                badge.innerText = result.settings.trading_mode === "LIVE" ? "● LIVE MODE" : "● Realistic Sim";
-            }
+        const badge = document.getElementById("tradingModeBadge");
+        if (badge) {
+            badge.innerText = "● LIVE REAL TRADING ENGINE";
+            badge.style.color = "#22c55e";
         }
         if (result.settings.auto_trade !== undefined) {
             updateAutoTradeUI(result.settings.auto_trade);
