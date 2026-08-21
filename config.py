@@ -13,7 +13,7 @@ MIN_TRADE_USDT = 5.0            # Minimum USDT required to execute a live trade
 SLIPPAGE_ENABLED = True
 SLIPPAGE_PCT = 0.02            # 0.02% order book impact
 MAKER_TAKER_FEE_PCT = 0.05     # 0.05% per trade (standard exchange fee)
-TRADING_MODE = "PAPER"         # "PAPER", "LIVE", or "TESTNET"
+TRADING_MODE = "LIVE"          # "PAPER", "LIVE", or "TESTNET"
 
 
 

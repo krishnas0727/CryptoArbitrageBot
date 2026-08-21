@@ -685,7 +685,7 @@ async function loadSettings() {
         autoTrade.checked = Boolean(settings.auto_trade);
         minProfit.value = settings.min_profit;
 
-        if (tradingModeSelect) tradingModeSelect.value = settings.trading_mode || "PAPER";
+        if (tradingModeSelect) tradingModeSelect.value = settings.trading_mode || "LIVE";
         if (tradeAmount) tradeAmount.value = settings.trade_amount || 1000;
         if (slippageToggle && document.activeElement !== slippageToggle) {
             slippageToggle.checked = settings.slippage_enabled !== false;
@@ -802,7 +802,7 @@ saveButton.addEventListener("click", async function () {
                 min_profit: profitValue,
                 trade_amount: amountVal,
                 slippage_enabled: slippageToggle ? slippageToggle.checked : true,
-                trading_mode: tradingModeSelect ? tradingModeSelect.value : "PAPER"
+                trading_mode: tradingModeSelect ? tradingModeSelect.value : "LIVE"
             })
         });
 
