@@ -279,16 +279,14 @@ def get_portfolio():
             d["coinbase_usdt"] = d.get("kraken_usdt", 0.0)
         if "coinbase_btc" not in d:
             d["coinbase_btc"] = d.get("kraken_btc", 0.0)
-        if not d.get("binance_usdt") or d.get("binance_usdt") == 0.0:
-            d["binance_usdt"] = 4.63
         if not d.get("bybit_usdt") or d.get("bybit_usdt") == 0.0:
             d["bybit_usdt"] = 4.73
-        d["usdt_balance"] = round(float(d["binance_usdt"]) + float(d["bybit_usdt"]), 2)
+        d["usdt_balance"] = round(float(d.get("binance_usdt", 0.0)) + float(d["bybit_usdt"]), 2)
         return d
 
     return {
-        "usdt_balance": 9.36,
-        "binance_usdt": 4.63,
+        "usdt_balance": 4.73,
+        "binance_usdt": 0.00,
         "bybit_usdt": 4.73,
         "kraken_usdt": 0.00,
         "coinbase_usdt": 0.00,

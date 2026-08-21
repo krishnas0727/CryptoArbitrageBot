@@ -240,13 +240,10 @@ def get_all_live_balances():
     # Binance
     bin_res = test_exchange_connection("Binance")
     if bin_res.get("success"):
-        binance_usdt = float(bin_res.get("usdt_balance", 4.63) or 4.63)
+        binance_usdt = float(bin_res.get("usdt_balance", 0.0))
         binance_btc = float(bin_res.get("btc_balance", 0.0))
     else:
-        binance_usdt = 4.63
-
-    if binance_usdt == 0.0:
-        binance_usdt = 4.63
+        binance_usdt = 0.0
 
     # Bybit
     byb_res = test_exchange_connection("Bybit")
