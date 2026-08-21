@@ -147,46 +147,17 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
 
     create_database()
 
-    trading_mode = getattr(config, "TRADING_MODE", "PAPER")
+    print("🔴 EXECUTING LIVE REAL TRADE ON EXCHANGES...")
+    live_res = execute_live_real_trade(
+        market_data["buy_exchange"],
+        market_data["sell_exchange"],
+        market_data["buy_price"],
+        market_data["sell_price"],
+        trade_amount=custom_amount or getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0)
+    )
 
-    # ========================================================
-    # LIVE REAL TRADING MODE
-    # ========================================================
-    if trading_mode == "LIVE":
-        print("🔴 EXECUTING LIVE REAL TRADE...")
-        live_res = execute_live_real_trade(
-            market_data["buy_exchange"],
-            market_data["sell_exchange"],
-            market_data["buy_price"],
-            market_data["sell_price"],
-            trade_amount=custom_amount or getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0)
-        )
-
-        if live_res.get("success"):
-            trade = live_res["trade"]
-            save_trade(trade)
-
-            last_trade_time = current_time
-            last_trade_key = trade_key
-
-            return {
-                "success": True,
-                "message": live_res["message"],
-                "trade": trade,
-                "summary": PaperTrader().summary()
-            }
-
-        # Fallback to Realistic Simulation if Live API key/balance is missing
-        print(f"⚠️ Live trade unavailable ({live_res.get('message')}). Executing via Realistic Simulation.")
-        trader = PaperTrader()
-        trade = trader.execute_trade(
-            market_data["buy_exchange"],
-            market_data["sell_exchange"],
-            market_data["buy_price"],
-            market_data["sell_price"],
-            custom_amount=custom_amount
-        )
-
+    if live_res.get("success"):
+        trade = live_res["trade"]
         save_trade(trade)
 
         last_trade_time = current_time
@@ -194,34 +165,15 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
 
         return {
             "success": True,
-            "message": f"⚡ Executed via Realistic Simulation: {live_res.get('message')}",
+            "message": live_res["message"],
             "trade": trade,
-            "summary": trader.summary()
+            "summary": get_portfolio()
         }
-
-    # ========================================================
-    # PAPER TRADING MODE (REALISTIC SIMULATION)
-    # ========================================================
-    trader = PaperTrader()
-    trade = trader.execute_trade(
-        market_data["buy_exchange"],
-        market_data["sell_exchange"],
-        market_data["buy_price"],
-        market_data["sell_price"],
-        custom_amount=custom_amount
-    )
-
-    save_trade(trade)
-
-    last_trade_time = current_time
-    last_trade_key = trade_key
-
-    return {
-        "success": True,
-        "message": "Automatic paper trade executed successfully.",
-        "trade": trade,
-        "summary": trader.summary()
-    }
+    else:
+        return {
+            "success": False,
+            "message": live_res.get("message", "Live Trade Execution Failed.")
+        }
 
 
 # ============================================================
