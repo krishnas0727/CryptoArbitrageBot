@@ -45,12 +45,6 @@ binance_opts = {
 bybit_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
-    "urls": {
-        "api": {
-            "public": "https://api.bytick.com",
-            "private": "https://api.bytick.com"
-        }
-    },
     "options": {
         "defaultType": "spot",
         "recvWindow": 60000,
@@ -116,12 +110,6 @@ def get_authenticated_exchange(name):
                 config_opts["httpsProxy"] = proxy_url
 
         if name.lower() == "bybit":
-            config_opts["urls"] = {
-                "api": {
-                    "public": "https://api.bytick.com",
-                    "private": "https://api.bytick.com"
-                }
-            }
             config_opts["options"]["defaultType"] = "spot"
 
         ex_instance = exchange_class(config_opts)
