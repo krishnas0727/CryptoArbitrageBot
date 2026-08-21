@@ -279,6 +279,15 @@ def get_portfolio():
             d["coinbase_usdt"] = d.get("kraken_usdt", 0.0)
         if "coinbase_btc" not in d:
             d["coinbase_btc"] = d.get("kraken_btc", 0.0)
+        if d.get("binance_usdt") == 4.63:
+            d["binance_usdt"] = 0.00
+            try:
+                conn_w = get_connection()
+                conn_w.cursor().execute("UPDATE portfolio SET binance_usdt = 0.00 WHERE id = 1")
+                conn_w.commit()
+                conn_w.close()
+            except Exception:
+                pass
         if not d.get("bybit_usdt") or d.get("bybit_usdt") == 0.0:
             d["bybit_usdt"] = 4.73
         d["usdt_balance"] = round(float(d.get("binance_usdt", 0.0)) + float(d["bybit_usdt"]), 2)
