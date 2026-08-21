@@ -1521,8 +1521,13 @@ async function testApiConnection(exchange) {
         });
         const result = await response.json();
         if (result.success) {
-            msg.style.color = "#22c55e";
-            msg.innerText = `🟢 Connected! Balance: $${result.usdt_balance} USDT | ${result.btc_balance} BTC`;
+            if (result.message && result.message.includes("🟡")) {
+                msg.style.color = "#f59e0b";
+                msg.innerText = result.message;
+            } else {
+                msg.style.color = "#22c55e";
+                msg.innerText = result.message || `🟢 Connected! Balance: $${result.usdt_balance} USDT | ${result.btc_balance} BTC`;
+            }
             loadApiKeys();
         } else {
             msg.style.color = "#ef4444";
