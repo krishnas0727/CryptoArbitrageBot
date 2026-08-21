@@ -168,9 +168,34 @@ def test_exchange_connection(name):
                 ex_instance.load_time_difference()
             except Exception:
                 pass
-        balance = ex_instance.fetch_balance()
-        usdt_free = balance.get("free", {}).get("USDT", 0.0) or balance.get("free", {}).get("USD", 0.0)
-        btc_free = balance.get("free", {}).get("BTC", 0.0)
+
+        balance = None
+        if name.lower() == "bybit":
+            for acc_type in ["UNIFIED", "SPOT", "FUNDING", None]:
+                try:
+                    params = {"accountType": acc_type} if acc_type else {}
+                    b = ex_instance.fetch_balance(params)
+                    if b and (b.get("free", {}).get("USDT", 0) > 0 or b.get("total", {}).get("USDT", 0) > 0):
+                        balance = b
+                        break
+                    elif not balance:
+                        balance = b
+                except Exception:
+                    pass
+
+        if not balance:
+            balance = ex_instance.fetch_balance()
+
+        usdt_free = (
+            balance.get("free", {}).get("USDT") or
+            balance.get("free", {}).get("USD") or
+            balance.get("total", {}).get("USDT") or
+            balance.get("USDT", {}).get("free") or 0.0
+        )
+        btc_free = (
+            balance.get("free", {}).get("BTC") or
+            balance.get("total", {}).get("BTC") or 0.0
+        )
 
         return {
             "success": True,
@@ -188,27 +213,10 @@ def test_exchange_connection(name):
             "success": False,
             "message": f"🚫 Permission Error: API Key lacks trading/reading permission on {name}."
         }
-    except (ccxt.NetworkError, ccxt.ExchangeError, ccxt.RequestTimeout, ccxt.ExchangeNotAvailable) as e:
-        from database import get_portfolio
-        p = get_portfolio()
-        u_bal = p.get(f"{name.lower()}_usdt", 0.0) or p.get("usdt_balance", 0.0)
-        b_bal = p.get(f"{name.lower()}_btc", 0.0)
-        return {
-            "success": True,
-            "message": f"🟢 Connected! Balance: ${round(float(u_bal or 0.0), 2)} USDT | {round(float(b_bal or 0.0), 6)} BTC",
-            "usdt_balance": round(float(u_bal or 0.0), 2),
-            "btc_balance": round(float(b_bal or 0.0), 6)
-        }
     except Exception as e:
-        from database import get_portfolio
-        p = get_portfolio()
-        u_bal = p.get(f"{name.lower()}_usdt", 0.0) or p.get("usdt_balance", 0.0)
-        b_bal = p.get(f"{name.lower()}_btc", 0.0)
         return {
-            "success": True,
-            "message": f"🟢 Connected! Balance: ${round(float(u_bal or 0.0), 2)} USDT | {round(float(b_bal or 0.0), 6)} BTC",
-            "usdt_balance": round(float(u_bal or 0.0), 2),
-            "btc_balance": round(float(b_bal or 0.0), 6)
+            "success": False,
+            "message": f"❌ {name} API Error: {str(e)}"
         }
 
 
