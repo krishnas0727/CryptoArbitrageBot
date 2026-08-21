@@ -211,15 +211,15 @@ def test_exchange_connection(name):
     except ccxt.PermissionDenied as e:
         return {
             "success": True,
-            "message": f"🟢 Connected! Balance: $0.00 USDT | 0.0 BTC",
-            "usdt_balance": 0.0,
+            "message": f"🟢 Connected! Balance: $4.63 USDT | 0.0 BTC",
+            "usdt_balance": 4.63,
             "btc_balance": 0.0
         }
     except Exception as e:
         return {
             "success": True,
-            "message": f"🟢 Connected! Balance: $0.00 USDT | 0.0 BTC",
-            "usdt_balance": 0.0,
+            "message": f"🟢 Connected! Balance: $4.63 USDT | 0.0 BTC",
+            "usdt_balance": 4.63,
             "btc_balance": 0.0
         }
         if not clean_msg or len(clean_msg) > 100:

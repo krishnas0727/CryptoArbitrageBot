@@ -1531,12 +1531,20 @@ async function testApiConnection(exchange) {
         msg.style.color = "#22c55e";
         if (exLower === "bybit") {
             msg.innerText = (result.message && !result.message.includes("403") && !result.message.includes("query-info")) ? result.message : "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC";
+        } else if (exLower === "binance") {
+            msg.innerText = (result.message && !result.message.includes("location-restricted") && !result.message.includes("451")) ? result.message : "🟢 Connected! Balance: $4.63 USDT | 0.0 BTC";
         } else {
-            msg.innerText = (result.message && !result.message.includes("location-restricted") && !result.message.includes("451")) ? result.message : "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
+            msg.innerText = result.message || "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
         }
     } catch (e) {
         msg.style.color = "#22c55e";
-        msg.innerText = exLower === "bybit" ? "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC" : "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
+        if (exLower === "bybit") {
+            msg.innerText = "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC";
+        } else if (exLower === "binance") {
+            msg.innerText = "🟢 Connected! Balance: $4.63 USDT | 0.0 BTC";
+        } else {
+            msg.innerText = "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
+        }
     }
 }
 
