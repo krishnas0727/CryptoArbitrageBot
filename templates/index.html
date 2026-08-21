@@ -1458,9 +1458,9 @@ async function loadApiKeys() {
                     badge.style.background = "#132b20";
                     badge.style.color = "#22c55e";
                 }
-                if (msg) {
+                if (msg && (!msg.innerText || !msg.innerText.includes("Balance:"))) {
                     msg.style.color = "#22c55e";
-                    msg.innerText = exLower === "bybit" ? "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC" : "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
+                    msg.innerText = "Connected successfully!";
                 }
             } else if (badge) {
                 badge.innerText = "Not Configured";
@@ -1498,7 +1498,7 @@ async function saveApiKey(exchange) {
         const result = await response.json();
         if (result.success) {
             msg.style.color = "#22c55e";
-            msg.innerText = exLower === "bybit" ? "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC" : "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
+            msg.innerText = "Connected successfully!";
             document.getElementById(`${exLower}ApiKey`).value = "";
             document.getElementById(`${exLower}ApiSecret`).value = "";
             loadApiKeys();
@@ -1534,7 +1534,6 @@ async function testApiConnection(exchange) {
         } else {
             msg.innerText = (result.message && !result.message.includes("location-restricted") && !result.message.includes("451")) ? result.message : "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
         }
-        loadApiKeys();
     } catch (e) {
         msg.style.color = "#22c55e";
         msg.innerText = exLower === "bybit" ? "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC" : "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
