@@ -46,6 +46,15 @@ bybit_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
     "hostname": os.environ.get("BYBIT_HOSTNAME", "bytick.com"),
+    "urls": {
+        "api": {
+            "spot": "https://api.bytick.com",
+            "futures": "https://api.bytick.com",
+            "v2": "https://api.bytick.com",
+            "public": "https://api.bytick.com",
+            "private": "https://api.bytick.com"
+        }
+    },
     "options": {
         "defaultType": "spot",
         "recvWindow": 60000,
@@ -74,8 +83,10 @@ exchanges = {
     "Bybit": ccxt.bybit(bybit_opts),
     "Coinbase": ccxt.coinbase(coinbase_opts)
 }
-if "Bybit" in exchanges and hasattr(exchanges["Bybit"], "has"):
-    exchanges["Bybit"].has["fetchCurrencies"] = False
+if "Bybit" in exchanges:
+    if hasattr(exchanges["Bybit"], "has"):
+        exchanges["Bybit"].has["fetchCurrencies"] = False
+    exchanges["Bybit"].fetch_currencies = lambda *args, **kwargs: {}
 
 if proxy_url:
     for ex in exchanges.values():
@@ -125,10 +136,21 @@ def get_authenticated_exchange(name):
             config_opts["options"]["defaultType"] = "spot"
             config_opts["options"]["fetchCurrencies"] = False
             config_opts["hostname"] = os.environ.get("BYBIT_HOSTNAME", "bytick.com")
+            config_opts["urls"] = {
+                "api": {
+                    "spot": "https://api.bytick.com",
+                    "futures": "https://api.bytick.com",
+                    "v2": "https://api.bytick.com",
+                    "public": "https://api.bytick.com",
+                    "private": "https://api.bytick.com"
+                }
+            }
 
         ex_instance = exchange_class(config_opts)
-        if hasattr(ex_instance, "has"):
-            ex_instance.has["fetchCurrencies"] = False
+        if name.lower() == "bybit":
+            if hasattr(ex_instance, "has"):
+                ex_instance.has["fetchCurrencies"] = False
+            ex_instance.fetch_currencies = lambda *args, **kwargs: {}
 
         if proxy_url and hasattr(ex_instance, "session"):
             try:

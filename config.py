@@ -33,7 +33,7 @@ TRANSFER_FEE = 0.00
 # True  = Automatic paper trading ON
 # False = Automatic paper trading OFF
 
-AUTO_TRADE_ENABLED = False
+AUTO_TRADE_ENABLED = True
 
 
 # Minimum net profit required
