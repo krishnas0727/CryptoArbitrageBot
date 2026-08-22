@@ -456,9 +456,9 @@ def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, se
     try:
         bal_res = test_exchange_connection(buy_exchange_name)
         if bal_res.get("success"):
-            free_usdt = float(bal_res.get("usdt_balance", 4.73) or 4.73)
+            free_usdt = float(bal_res.get("usdt_balance", 0.0) or 0.0)
         else:
-            free_usdt = 4.73
+            free_usdt = 0.0
 
         min_required = getattr(config, "MIN_TRADE_USDT", 1.0)
         if free_usdt < min_required:
@@ -475,8 +475,10 @@ def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, se
             print(f"💰 Dynamic Trade Amount set to ${trade_amount:.2f} USDT (Available: ${free_usdt:.2f} USDT)")
 
     except Exception as e:
-        free_usdt = 4.73
-        trade_amount = min(trade_amount, free_usdt)
+        return {
+            "success": False,
+            "message": f"Balance verification failed on {buy_exchange_name}: {str(e)}"
+        }
 
 
     # 4. Calculate Quantity
