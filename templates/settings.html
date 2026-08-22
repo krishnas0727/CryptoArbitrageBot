@@ -911,7 +911,15 @@ async function saveApiKey(exchange) {
 
 async function testApiConnection(exchange) {
     const exLower = exchange.toLowerCase();
+    const apiKey = document.getElementById(`${exLower}ApiKey`) ? document.getElementById(`${exLower}ApiKey`).value.trim() : "";
+    const apiSecret = document.getElementById(`${exLower}ApiSecret`) ? document.getElementById(`${exLower}ApiSecret`).value.trim() : "";
     const msg = document.getElementById(`${exLower}KeyMsg`);
+
+    if (!apiKey || !apiSecret) {
+        msg.style.color = "#ef4444";
+        msg.innerText = "❌ Please enter both API Key and API Secret first.";
+        return;
+    }
 
     msg.style.color = "#3b82f6";
     msg.innerText = `⏳ Testing connection to ${exchange}...`;
@@ -920,12 +928,13 @@ async function testApiConnection(exchange) {
         const response = await fetch("/api/keys/test", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ exchange })
+            body: JSON.stringify({ exchange, api_key: apiKey, api_secret: apiSecret })
         });
         const result = await response.json();
         if (result.success) {
             msg.style.color = "#22c55e";
             msg.innerText = result.message || `🟢 ${exchange} Real Wallet Connected! Live Trading Active`;
+            loadApiKeys();
         } else {
             msg.style.color = "#ef4444";
             msg.innerText = result.message || "Connection failed.";

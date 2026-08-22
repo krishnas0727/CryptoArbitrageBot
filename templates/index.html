@@ -1670,6 +1670,12 @@ async function testApiConnection(exchange) {
     const apiSecret = document.getElementById(`${exLower}ApiSecret`) ? document.getElementById(`${exLower}ApiSecret`).value.trim() : "";
     const msg = document.getElementById(`${exLower}KeyMsg`);
 
+    if (!apiKey || !apiSecret) {
+        msg.style.color = "#ef4444";
+        msg.innerText = "❌ Please enter both API Key and API Secret first.";
+        return;
+    }
+
     msg.style.color = "#3b82f6";
     msg.innerText = `⏳ Testing connection to ${exchange}...`;
 
@@ -1680,23 +1686,18 @@ async function testApiConnection(exchange) {
             body: JSON.stringify({ exchange, api_key: apiKey, api_secret: apiSecret })
         });
         const result = await response.json();
-        msg.style.color = "#22c55e";
-        if (exLower === "bybit") {
-            msg.innerText = (result.message && !result.message.includes("403") && !result.message.includes("query-info")) ? result.message : "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC";
-        } else if (exLower === "binance") {
-            msg.innerText = (result.message && !result.message.includes("location-restricted") && !result.message.includes("451")) ? result.message : "🟢 Connected! Balance: $4.63 USDT | 0.0 BTC";
+        if (result.success) {
+            msg.style.color = "#22c55e";
+            msg.innerText = result.message || `🟢 ${exchange} Connected!`;
+            loadApiKeys();
+            loadMarketData();
         } else {
-            msg.innerText = result.message || "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
+            msg.style.color = "#ef4444";
+            msg.innerText = result.message || "❌ Connection failed. Check API Key & Secret permissions.";
         }
     } catch (e) {
-        msg.style.color = "#22c55e";
-        if (exLower === "bybit") {
-            msg.innerText = "🟢 Connected! Balance: $4.73 USDT | 0.0 BTC";
-        } else if (exLower === "binance") {
-            msg.innerText = "🟢 Connected! Balance: $4.63 USDT | 0.0 BTC";
-        } else {
-            msg.innerText = "🟢 Connected! Balance: $0.00 USDT | 0.0 BTC";
-        }
+        msg.style.color = "#ef4444";
+        msg.innerText = "❌ Network connection error. Unable to reach server.";
     }
 }
 
