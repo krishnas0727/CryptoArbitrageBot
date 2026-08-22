@@ -147,17 +147,46 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
 
     create_database()
 
-    print("🔴 EXECUTING LIVE REAL TRADE ON EXCHANGES...")
-    live_res = execute_live_real_trade(
-        market_data["buy_exchange"],
-        market_data["sell_exchange"],
-        market_data["buy_price"],
-        market_data["sell_price"],
-        trade_amount=custom_amount or getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0)
-    )
+    trading_mode = getattr(config, "TRADING_MODE", "PAPER")
 
-    if live_res.get("success"):
-        trade = live_res["trade"]
+    if trading_mode == "LIVE":
+        print("🔴 EXECUTING LIVE REAL TRADE ON EXCHANGES...")
+        live_res = execute_live_real_trade(
+            market_data["buy_exchange"],
+            market_data["sell_exchange"],
+            market_data["buy_price"],
+            market_data["sell_price"],
+            trade_amount=custom_amount or getattr(config, "DEFAULT_TRADE_AMOUNT", 1000.0)
+        )
+
+        if live_res.get("success"):
+            trade = live_res["trade"]
+            save_trade(trade)
+
+            last_trade_time = current_time
+            last_trade_key = trade_key
+
+            return {
+                "success": True,
+                "message": live_res["message"],
+                "trade": trade,
+                "summary": PaperTrader().summary()
+            }
+        else:
+            return {
+                "success": False,
+                "message": live_res.get("message", "Live Trade Execution Failed.")
+            }
+    else:
+        print("🟢 EXECUTING PAPER SIMULATED TRADE...")
+        pt = PaperTrader()
+        trade = pt.execute_trade(
+            market_data["buy_exchange"],
+            market_data["sell_exchange"],
+            market_data["buy_price"],
+            market_data["sell_price"],
+            custom_amount=custom_amount
+        )
         save_trade(trade)
 
         last_trade_time = current_time
@@ -165,14 +194,9 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
 
         return {
             "success": True,
-            "message": live_res["message"],
+            "message": f"PAPER TRADE EXECUTED: Bought on {market_data['buy_exchange']}, Sold on {market_data['sell_exchange']}.",
             "trade": trade,
-            "summary": get_portfolio()
-        }
-    else:
-        return {
-            "success": False,
-            "message": live_res.get("message", "Live Trade Execution Failed.")
+            "summary": pt.summary()
         }
 
 
