@@ -13,6 +13,7 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -124,10 +125,34 @@
 
     </section>
 
+    <!-- LIVE CHART PANEL -->
+    <section class="panel" style="margin-top:24px;">
+        <div class="panel-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2>📈 Real-Time Price Chart</h2>
+                <p>Live ticker updates across exchanges</p>
+            </div>
+            <span style="font-size:12px; color:#22c55e; background:#132b20; padding:4px 10px; border-radius:12px; border:1px solid #1e5a3b;">
+                ● LIVE
+            </span>
+        </div>
+        <div style="position:relative; height:320px; width:100%; margin-top:15px;">
+            <canvas id="pricesPageChart"></canvas>
+        </div>
+    </section>
+
 </main>
 
 
 <script>
+
+let pricesChart = null;
+let pricesHistory = {
+    labels: [],
+    binance: [],
+    bybit: [],
+    coinbase: []
+};
 
 function updateTime() {
 
@@ -140,6 +165,55 @@ updateTime();
 
 setInterval(updateTime, 1000);
 
+
+function initPricesChart() {
+    const ctx = document.getElementById('pricesPageChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    try {
+        pricesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: pricesHistory.labels,
+                datasets: [
+                    {
+                        label: 'Binance',
+                        data: pricesHistory.binance,
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: false
+                    },
+                    {
+                        label: 'Bybit',
+                        data: pricesHistory.bybit,
+                        borderColor: '#eab308',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: false
+                    },
+                    {
+                        label: 'Coinbase',
+                        data: pricesHistory.coinbase,
+                        borderColor: '#06b6d4',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { labels: { color: '#cbd5e1' } } }
+            }
+        });
+    } catch(e) {}
+}
 
 async function loadPrices() {
 
@@ -167,6 +241,27 @@ async function loadPrices() {
 
         if (data.prices.Coinbase || data.prices.Kraken) {
             document.getElementById("coinbase").innerText = Number(data.prices.Coinbase || data.prices.Kraken).toFixed(2);
+        }
+
+        if (data.prices) {
+            const timeStr = new Date().toLocaleTimeString();
+            pricesHistory.labels.push(timeStr);
+            pricesHistory.binance.push(data.prices.Binance || null);
+            pricesHistory.bybit.push(data.prices.Bybit || null);
+            pricesHistory.coinbase.push(data.prices.Coinbase || data.prices.Kraken || null);
+
+            if (pricesHistory.labels.length > 30) {
+                pricesHistory.labels.shift();
+                pricesHistory.binance.shift();
+                pricesHistory.bybit.shift();
+                pricesHistory.coinbase.shift();
+            }
+
+            if (!pricesChart) {
+                initPricesChart();
+            } else {
+                pricesChart.update('none');
+            }
         }
 
     }
