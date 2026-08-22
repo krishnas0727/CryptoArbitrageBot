@@ -225,10 +225,7 @@ async function loadTrades() {
             const sizeUsdt = Number(trade.trade_amount || 1000).toFixed(0);
             const slipPct = Number(trade.slippage || 0.05).toFixed(2);
 
-            const isLive = String(trade.mode || '').toUpperCase() === "LIVE";
-            const modeBadge = isLive 
-                ? `<span style="font-size:10px; font-weight:700; background:#3f0f15; color:#ef4444; border:1px solid #7f1d1d; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">🔴 REAL LIVE</span>`
-                : `<span style="font-size:10px; font-weight:700; background:#1e293b; color:#94a3b8; border:1px solid #334155; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">📄 PAPER</span>`;
+            const modeBadge = `<span style="font-size:10px; font-weight:700; background:#3f0f15; color:#ef4444; border:1px solid #7f1d1d; padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">🔴 REAL LIVE</span>`;
 
             row.innerHTML = `
 

@@ -1,5 +1,4 @@
-from exchange import get_live_prices, execute_live_real_trade
-from paper_trade import PaperTrader
+from exchange import get_live_prices, execute_live_real_trade_pipeline, execute_live_real_trade
 from database import create_database, save_trade
 
 import config
@@ -114,7 +113,7 @@ def analyze_market():
 # EXECUTE REAL LIVE TRADE ON EXCHANGES
 # ============================================================
 
-def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
+def execute_live_trade(market_data, custom_amount=None, is_manual=False):
 
     global last_trade_time
     global last_trade_key
@@ -151,8 +150,8 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
 
     create_database()
 
-    print(f"🚀 EXECUTING REAL LIVE TRADE: BUY on {market_data['buy_exchange']} ➔ SELL on {market_data['sell_exchange']}...")
-    live_res = execute_live_real_trade(
+    print(f"🚀 EXECUTING REAL LIVE TRADE PIPELINE: BUY on {market_data['buy_exchange']} ➔ SELL on {market_data['sell_exchange']}...")
+    live_res = execute_live_real_trade_pipeline(
         market_data["buy_exchange"],
         market_data["sell_exchange"],
         market_data["buy_price"],
@@ -171,6 +170,7 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
             "success": True,
             "message": live_res["message"],
             "trade": trade,
+            "execution_steps": live_res.get("execution_steps", []),
             "summary": {"trade_amount": trade.get("trade_amount")}
         }
     else:
@@ -178,6 +178,10 @@ def execute_paper_trade(market_data, custom_amount=None, is_manual=False):
             "success": False,
             "message": live_res.get("message", "Live Real Trade Execution Failed.")
         }
+
+
+# Alias for backward compatibility
+execute_paper_trade = execute_live_trade
 
 
 # ============================================================

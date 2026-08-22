@@ -31,7 +31,7 @@ function showAutoTradePopup(trade) {
             </h2>
 
             <p class="auto-popup-status">
-                Paper BUY + Paper SELL completed
+                Live BUY + Live SELL completed
             </p>
 
             <div class="auto-popup-details">
@@ -302,7 +302,7 @@ async function loadMarketData() {
             if (data.net_profit > 0) {
 
                 status.innerText =
-                    "🟢 Profitable — Automatic Paper Trading";
+                    "🟢 Profitable — Automatic Live Real Trading";
 
             } else {
 
@@ -362,7 +362,7 @@ async function loadMarketData() {
                 if (message) {
 
                     message.innerText =
-                        "🟢 PAPER BUY + PAPER SELL EXECUTED";
+                        "🟢 LIVE BUY + LIVE SELL EXECUTED";
                 }
 
 

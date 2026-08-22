@@ -286,10 +286,10 @@
 
 <div id="execModalOverlay">
 
-    <div class="exec-modal">
+    <div class="exec-modal" style="width: 540px; max-height: 90vh; overflow-y: auto;">
 
-        <h3 id="execModalTitle" style="color:white; font-size:20px; margin-bottom:6px;">⚡ Executing Realistic Trade...</h3>
-        <p id="execModalSub" style="color:#64748b; font-size:13px; margin-bottom:24px;">Routing order through CCXT exchange engine</p>
+        <h3 id="execModalTitle" style="color:white; font-size:20px; margin-bottom:6px;">⚡ Executing Live Real Trade...</h3>
+        <p id="execModalSub" style="color:#64748b; font-size:13px; margin-bottom:20px;">Following 10-step Live Execution Pipeline</p>
 
         <div id="stepsContainer">
 
@@ -297,8 +297,8 @@
             <div class="step-item" id="step1">
                 <div class="step-icon" id="step1Icon">1</div>
                 <div>
-                    <strong style="color:white; font-size:14px;" id="step1Title">Submitting BUY Order</strong>
-                    <div style="color:#94a3b8; font-size:12px; margin-top:2px;" id="step1Detail">Placing Limit Buy order...</div>
+                    <strong style="color:white; font-size:13px;" id="step1Title">Check Binance connectivity</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step1Detail">Testing Binance API connection...</div>
                 </div>
             </div>
 
@@ -306,8 +306,8 @@
             <div class="step-item" id="step2">
                 <div class="step-icon" id="step2Icon">2</div>
                 <div>
-                    <strong style="color:white; font-size:14px;" id="step2Title">Transferring Asset</strong>
-                    <div style="color:#94a3b8; font-size:12px; margin-top:2px;" id="step2Detail">Awaiting network confirmation...</div>
+                    <strong style="color:white; font-size:13px;" id="step2Title">Check Bybit connectivity</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step2Detail">Testing Bybit API connection...</div>
                 </div>
             </div>
 
@@ -315,8 +315,71 @@
             <div class="step-item" id="step3">
                 <div class="step-icon" id="step3Icon">3</div>
                 <div>
-                    <strong style="color:white; font-size:14px;" id="step3Title">Executing SELL Order</strong>
-                    <div style="color:#94a3b8; font-size:12px; margin-top:2px;" id="step3Detail">Submitting Market Sell order...</div>
+                    <strong style="color:white; font-size:13px;" id="step3Title">Check balances</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step3Detail">Verifying available exchange balances...</div>
+                </div>
+            </div>
+
+            <!-- STEP 4 -->
+            <div class="step-item" id="step4">
+                <div class="step-icon" id="step4Icon">4</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step4Title">Check current prices again</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step4Detail">Re-fetching ticker prices before ordering...</div>
+                </div>
+            </div>
+
+            <!-- STEP 5 -->
+            <div class="step-item" id="step5">
+                <div class="step-icon" id="step5Icon">5</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step5Title">Check profit after fees/slippage</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step5Detail">Evaluating net profit threshold...</div>
+                </div>
+            </div>
+
+            <!-- STEP 6 -->
+            <div class="step-item" id="step6">
+                <div class="step-icon" id="step6Icon">6</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step6Title">BUY Binance</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step6Detail">Submitting Market BUY order on Binance...</div>
+                </div>
+            </div>
+
+            <!-- STEP 7 -->
+            <div class="step-item" id="step7">
+                <div class="step-icon" id="step7Icon">7</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step7Title">Confirm BUY filled</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step7Detail">Verifying Binance BUY order fill status...</div>
+                </div>
+            </div>
+
+            <!-- STEP 8 -->
+            <div class="step-item" id="step8">
+                <div class="step-icon" id="step8Icon">8</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step8Title">SELL Bybit</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step8Detail">Submitting Market SELL order on Bybit...</div>
+                </div>
+            </div>
+
+            <!-- STEP 9 -->
+            <div class="step-item" id="step9">
+                <div class="step-icon" id="step9Icon">9</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step9Title">Confirm SELL filled</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step9Detail">Verifying Bybit SELL order fill status...</div>
+                </div>
+            </div>
+
+            <!-- STEP 10 -->
+            <div class="step-item" id="step10">
+                <div class="step-icon" id="step10Icon">10</div>
+                <div>
+                    <strong style="color:white; font-size:13px;" id="step10Title">Save trade</strong>
+                    <div style="color:#94a3b8; font-size:11px; margin-top:2px;" id="step10Detail">Recording trade log to database...</div>
                 </div>
             </div>
 
@@ -328,10 +391,6 @@
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span style="color:#64748b; font-size:13px;">Executed Quantity:</span>
                 <strong style="color:white; font-size:13px;" id="sumBtc">-- BTC</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                <span style="color:#64748b; font-size:13px;">Estimated Slippage:</span>
-                <strong style="color:#eab308; font-size:13px;" id="sumSlip">0.05%</strong>
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span style="color:#64748b; font-size:13px;">Total Fees:</span>
@@ -420,14 +479,16 @@ async function loadArbitrage() {
 ============================== */
 
 function resetExecModal() {
-    document.getElementById("execModalTitle").innerText = "⚡ Executing Realistic Trade...";
-    document.getElementById("execModalSub").innerText = "Routing order through exchange execution engine";
+    document.getElementById("execModalTitle").innerText = "⚡ Executing Live Real Trade...";
+    document.getElementById("execModalSub").innerText = "10-Step Live Execution Pipeline";
 
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 10; i++) {
         const step = document.getElementById(`step${i}`);
         const icon = document.getElementById(`step${i}Icon`);
-        step.classList.remove("active", "completed");
-        icon.innerHTML = i;
+        if (step && icon) {
+            step.classList.remove("active", "completed");
+            icon.innerHTML = i;
+        }
     }
     document.getElementById("modalSummaryBox").style.display = "none";
     document.getElementById("modalCloseBtn").style.display = "none";
@@ -437,9 +498,15 @@ function showStep(stepNum, titleText, detailText, isDone = false) {
     const step = document.getElementById(`step${stepNum}`);
     const icon = document.getElementById(`step${stepNum}Icon`);
 
+    if (!step || !icon) return;
+
     step.classList.add("active");
-    if (titleText) document.getElementById(`step${stepNum}Title`).innerText = titleText;
-    if (detailText) document.getElementById(`step${stepNum}Detail`).innerText = detailText;
+    if (titleText && document.getElementById(`step${stepNum}Title`)) {
+        document.getElementById(`step${stepNum}Title`).innerText = titleText;
+    }
+    if (detailText && document.getElementById(`step${stepNum}Detail`)) {
+        document.getElementById(`step${stepNum}Detail`).innerText = detailText;
+    }
 
     if (isDone) {
         step.classList.add("completed");
@@ -456,7 +523,7 @@ function closeExecModal() {
 
 
 /* ==============================
-   EXECUTE PAPER TRADE
+   EXECUTE LIVE TRADE PIPELINE
 ============================== */
 
 async function executeTrade() {
@@ -471,7 +538,7 @@ async function executeTrade() {
     document.getElementById("execModalOverlay").style.display = "flex";
 
     // Step 1 active
-    showStep(1, "Submitting BUY Order", `Placing buy order for $${selectedTradeSize} USDT...`, false);
+    showStep(1, "Check Binance connectivity", "Ping Binance API...", false);
 
     try {
         const response = await fetch("/api/trade", {
@@ -484,24 +551,22 @@ async function executeTrade() {
 
         if (result.success) {
             const trade = result.trade;
+            const steps = result.execution_steps || [];
 
-            // Step 1 done
-            showStep(1, `BUY Order Filled (${trade.buy})`, `Order ID: ${trade.buy_order_id} | Price: $${trade.effective_buy_price}`, true);
-
-            // Step 2 active -> done
-            await new Promise(r => setTimeout(r, 400));
-            showStep(2, `Cross-Exchange Transfer`, `Transferring ${trade.btc_amount} BTC -> ${trade.sell}`, true);
-
-            // Step 3 active -> done
-            await new Promise(r => setTimeout(r, 400));
-            showStep(3, `SELL Order Filled (${trade.sell})`, `Order ID: ${trade.sell_order_id} | Price: $${trade.effective_sell_price}`, true);
+            // Animate each step to completed
+            for (let i = 1; i <= 10; i++) {
+                const stepData = steps.find(s => s.step === i);
+                const title = stepData ? stepData.title : `Step ${i}`;
+                const detail = stepData ? stepData.detail : "OK";
+                showStep(i, title, detail, true);
+                await new Promise(r => setTimeout(r, 200));
+            }
 
             // Populate summary
-            document.getElementById("execModalTitle").innerText = "🎉 Trade Execution Completed!";
-            document.getElementById("execModalSub").innerText = "Orders matched and saved to persistent database.";
+            document.getElementById("execModalTitle").innerText = "🎉 Live Trade Execution Completed!";
+            document.getElementById("execModalSub").innerText = "Orders filled and saved to database.";
 
             document.getElementById("sumBtc").innerText = `${trade.btc_amount} BTC`;
-            document.getElementById("sumSlip").innerText = `${trade.slippage}%`;
             document.getElementById("sumFees").innerText = `$${trade.fees} USDT`;
             document.getElementById("sumProfit").innerText = `+${trade.profit} USDT`;
 

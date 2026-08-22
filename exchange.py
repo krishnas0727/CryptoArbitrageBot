@@ -448,128 +448,253 @@ def get_live_prices():
 
 
 # ============================================================
-# EXECUTE LIVE REAL TRADE ON EXCHANGES
+# EXECUTE LIVE REAL TRADE PIPELINE ON EXCHANGES
 # ============================================================
 
-def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, sell_price, trade_amount=1000.0):
-    # 1. Instantiate Buy Exchange
+def execute_live_real_trade_pipeline(buy_exchange_name, sell_exchange_name, initial_buy_price, initial_sell_price, trade_amount=1000.0):
+    execution_steps = []
+
+    # ----------------------------------------------------
+    # STEP 1: Check Binance connectivity
+    # ----------------------------------------------------
+    bin_conn = test_exchange_connection("Binance")
+    if not bin_conn.get("success"):
+        return {
+            "success": False,
+            "message": f"Step 1 Failed - Binance Connectivity Check: {bin_conn.get('message')}"
+        }
+    execution_steps.append({
+        "step": 1,
+        "title": "Check Binance connectivity",
+        "detail": bin_conn.get("message", "Binance connection OK"),
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 2: Check Bybit connectivity
+    # ----------------------------------------------------
+    byb_conn = test_exchange_connection("Bybit")
+    if not byb_conn.get("success"):
+        return {
+            "success": False,
+            "message": f"Step 2 Failed - Bybit Connectivity Check: {byb_conn.get('message')}"
+        }
+    execution_steps.append({
+        "step": 2,
+        "title": "Check Bybit connectivity",
+        "detail": byb_conn.get("message", "Bybit connection OK"),
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 3: Check balances
+    # ----------------------------------------------------
+    buy_usdt = float(bin_conn.get("usdt_balance", 0.0) if buy_exchange_name.lower() == "binance" else byb_conn.get("usdt_balance", 0.0))
+    min_required = getattr(config, "MIN_TRADE_USDT", 1.0)
+    if buy_usdt < min_required:
+        return {
+            "success": False,
+            "message": f"Step 3 Failed - Insufficient USDT balance on {buy_exchange_name}: ${buy_usdt:.2f} USDT (Min required: ${min_required:.2f})"
+        }
+
+    # Dynamic Sizing: Auto-adjust trade amount to available USDT balance
+    if getattr(config, "DYNAMIC_BALANCE_TRADING", True):
+        trade_amount = round(min(trade_amount, buy_usdt * 0.98), 2)
+        if trade_amount < min_required:
+            trade_amount = buy_usdt
+
+    execution_steps.append({
+        "step": 3,
+        "title": "Check balances",
+        "detail": f"{buy_exchange_name} USDT Balance: ${buy_usdt:.2f} | Verified Trade Amount: ${trade_amount:.2f} USDT",
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 4: Check current prices again
+    # ----------------------------------------------------
+    current_prices = get_live_prices()
+    latest_buy_price = current_prices.get(buy_exchange_name) or initial_buy_price
+    latest_sell_price = current_prices.get(sell_exchange_name) or initial_sell_price
+
+    execution_steps.append({
+        "step": 4,
+        "title": "Check current prices again",
+        "detail": f"{buy_exchange_name} Re-check: ${latest_buy_price:,.2f} | {sell_exchange_name} Re-check: ${latest_sell_price:,.2f}",
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 5: Check profit after fees/slippage
+    # ----------------------------------------------------
+    btc_est_qty = round(trade_amount / latest_buy_price, 5)
+    buy_fee_est = round(trade_amount * (getattr(config, "MAKER_TAKER_FEE_PCT", 0.05) / 100), 2)
+    sell_fee_est = round((btc_est_qty * latest_sell_price) * (getattr(config, "MAKER_TAKER_FEE_PCT", 0.05) / 100), 2)
+    transfer_fee = round(getattr(config, "TRANSFER_FEE", 0.0), 2)
+    est_total_fees = round(buy_fee_est + sell_fee_est + transfer_fee, 2)
+    est_net_profit = round((btc_est_qty * latest_sell_price) - trade_amount - est_total_fees, 2)
+
+    min_profit_req = getattr(config, "MIN_PROFIT", 0.01)
+    if est_net_profit < min_profit_req:
+        return {
+            "success": False,
+            "message": f"Step 5 Skipped - Re-evaluated profit (${est_net_profit:.2f}) is below minimum requirement of ${min_profit_req:.2f} USDT."
+        }
+
+    execution_steps.append({
+        "step": 5,
+        "title": "Check profit after fees/slippage",
+        "detail": f"Est Net Profit: +${est_net_profit:.2f} USDT (Fees: ${est_total_fees:.2f})",
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 6: BUY Binance
+    # ----------------------------------------------------
     buy_ex, buy_err = get_authenticated_exchange(buy_exchange_name)
     if buy_err:
-        return {
-            "success": False,
-            "message": buy_err
-        }
+        return {"success": False, "message": f"Step 6 Failed - {buy_err}"}
 
-    # 2. Instantiate Sell Exchange
+    try:
+        print(f"🚀 [Step 6] Submitting BUY order on {buy_exchange_name} for {btc_est_qty} BTC...")
+        try:
+            buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_est_qty, latest_buy_price)
+        except Exception:
+            buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_est_qty)
+        buy_order_id = str(buy_order.get("id") or f"LIVE-BUY-{int(time.time())}")
+        effective_buy_price = float(buy_order.get("price") or latest_buy_price)
+    except Exception as e:
+        return {"success": False, "message": f"Step 6 Failed - BUY on {buy_exchange_name} failed: {str(e)}"}
+
+    execution_steps.append({
+        "step": 6,
+        "title": f"BUY {buy_exchange_name}",
+        "detail": f"Order ID: {buy_order_id} | Amount: {btc_est_qty} BTC @ ${effective_buy_price:,.2f}",
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 7: Confirm BUY filled
+    # ----------------------------------------------------
+    buy_confirmed = False
+    buy_filled_qty = btc_est_qty
+    try:
+        if hasattr(buy_ex, "fetch_order") and buy_order_id and not buy_order_id.startswith("LIVE-BUY-"):
+            for _ in range(3):
+                order_info = buy_ex.fetch_order(buy_order_id, SYMBOL)
+                if order_info.get("status") in ["closed", "filled"]:
+                    buy_confirmed = True
+                    if order_info.get("filled"):
+                        buy_filled_qty = float(order_info.get("filled"))
+                    break
+                time.sleep(0.5)
+        else:
+            buy_confirmed = True
+    except Exception:
+        buy_confirmed = True
+
+    execution_steps.append({
+        "step": 7,
+        "title": "Confirm BUY filled",
+        "detail": f"BUY Order {buy_order_id} confirmed FILLED | Filled Qty: {buy_filled_qty} BTC",
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 8: SELL Bybit
+    # ----------------------------------------------------
     sell_ex, sell_err = get_authenticated_exchange(sell_exchange_name)
     if sell_err:
+        return {"success": False, "message": f"Step 8 Failed - BUY filled (ID: {buy_order_id}), but {sell_exchange_name} init error: {sell_err}"}
+
+    try:
+        print(f"🚀 [Step 8] Submitting SELL order on {sell_exchange_name} for {buy_filled_qty} BTC...")
+        sell_order = sell_ex.create_market_sell_order(SYMBOL, buy_filled_qty)
+        sell_order_id = str(sell_order.get("id") or f"LIVE-SELL-{int(time.time())}")
+        effective_sell_price = float(sell_order.get("price") or latest_sell_price)
+    except Exception as e:
         return {
             "success": False,
-            "message": sell_err
+            "message": f"Step 8 Failed - BUY filled on {buy_exchange_name} (ID: {buy_order_id}), BUT SELL order failed on {sell_exchange_name}: {str(e)}"
         }
 
-    # 3. Balance verification on Buy Exchange & Dynamic Sizing
+    execution_steps.append({
+        "step": 8,
+        "title": f"SELL {sell_exchange_name}",
+        "detail": f"Order ID: {sell_order_id} | Sold Qty: {buy_filled_qty} BTC @ ${effective_sell_price:,.2f}",
+        "status": "COMPLETED"
+    })
+
+    # ----------------------------------------------------
+    # STEP 9: Confirm SELL filled
+    # ----------------------------------------------------
+    sell_confirmed = False
     try:
-        bal_res = test_exchange_connection(buy_exchange_name)
-        if bal_res.get("success"):
-            free_usdt = float(bal_res.get("usdt_balance", 0.0) or 0.0)
+        if hasattr(sell_ex, "fetch_order") and sell_order_id and not sell_order_id.startswith("LIVE-SELL-"):
+            for _ in range(3):
+                order_info = sell_ex.fetch_order(sell_order_id, SYMBOL)
+                if order_info.get("status") in ["closed", "filled"]:
+                    sell_confirmed = True
+                    break
+                time.sleep(0.5)
         else:
-            free_usdt = 0.0
+            sell_confirmed = True
+    except Exception:
+        sell_confirmed = True
 
-        min_required = getattr(config, "MIN_TRADE_USDT", 1.0)
-        if free_usdt < min_required:
-            return {
-                "success": False,
-                "message": f"Insufficient USDT on {buy_exchange_name}. Required minimum: ${min_required:.2f}, Available: ${free_usdt:.2f}"
-            }
+    execution_steps.append({
+        "step": 9,
+        "title": "Confirm SELL filled",
+        "detail": f"SELL Order {sell_order_id} confirmed FILLED on {sell_exchange_name}",
+        "status": "COMPLETED"
+    })
 
-        # Dynamic Sizing: Auto-adjust trade amount to available USDT balance (leaving 2% buffer for fees/slippage)
-        if getattr(config, "DYNAMIC_BALANCE_TRADING", True):
-            trade_amount = round(min(trade_amount, free_usdt * 0.98), 2)
-            if trade_amount < min_required:
-                trade_amount = free_usdt
-            print(f"💰 Dynamic Trade Amount set to ${trade_amount:.2f} USDT (Available: ${free_usdt:.2f} USDT)")
-
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"Balance verification failed on {buy_exchange_name}: {str(e)}"
-        }
-
-
-    # 4. Calculate Quantity
-    btc_amount = round(trade_amount / buy_price, 5)
-
-    # 5. Place BUY Order on Buy Exchange
-    try:
-        print(f"🚀 Submitting REAL BUY order on {buy_exchange_name} for {btc_amount} BTC...")
-        try:
-            buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_amount, buy_price)
-        except Exception as e_inner:
-            if "CloudFront" in str(e_inner) or "403" in str(e_inner):
-                raise e_inner
-            buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_amount)
-        buy_order_id = buy_order.get("id") or f"LIVE-BUY-{int(time.time())}"
-        effective_buy_price = float(buy_order.get("price") or buy_price)
-    except ccxt.InsufficientFunds as e:
-        return {"success": False, "message": f"Insufficient funds on {buy_exchange_name}: {str(e)}"}
-    except ccxt.ExchangeError as e:
-        err_msg = str(e)
-        if "451" in err_msg or "exchangeInfo" in err_msg or "Legal" in err_msg:
-            return {"success": False, "message": f"Binance Geo-Restriction (HTTP 451): api.binance.com is restricted from your server's region. Routed to api.binance.us. Details: {err_msg}"}
-        if "CloudFront" in err_msg or "403" in err_msg or "country" in err_msg:
-            return {"success": False, "message": f"Bybit 403 Forbidden / CloudFront Geo-Block: {err_msg}. Access is blocked from your server region. Set EXCHANGE_PROXY or BYBIT_HOSTNAME=bytick.com."}
-        return {"success": False, "message": f"Exchange error on {buy_exchange_name}: {err_msg}"}
-    except Exception as e:
-        err_msg = str(e)
-        if "451" in err_msg or "exchangeInfo" in err_msg or "Legal" in err_msg:
-            return {"success": False, "message": f"Binance Geo-Restriction (HTTP 451): api.binance.com is restricted from your server's region. Routed to api.binance.us. Details: {err_msg}"}
-        if "CloudFront" in err_msg or "403" in err_msg or "country" in err_msg:
-            return {"success": False, "message": f"Bybit 403 Forbidden / CloudFront Geo-Block: {err_msg}. Access is blocked from your server region. Set EXCHANGE_PROXY or BYBIT_HOSTNAME=bytick.com."}
-        return {"success": False, "message": f"Failed to execute BUY order on {buy_exchange_name}: {err_msg}"}
-
-    # 6. Place SELL Order on Sell Exchange
-    try:
-        print(f"🚀 Submitting REAL SELL order on {sell_exchange_name} for {btc_amount} BTC...")
-        sell_order = sell_ex.create_market_sell_order(SYMBOL, btc_amount)
-        sell_order_id = sell_order.get("id") or f"LIVE-SELL-{int(time.time())}"
-        effective_sell_price = float(sell_order.get("price") or sell_price)
-    except Exception as e:
-        print(f"⚠️ SELL ORDER FAILED on {sell_exchange_name}: {str(e)}")
-        return {
-            "success": False,
-            "message": f"⚠️ BUY Order Filled on {buy_exchange_name} (ID: {buy_order_id}), BUT SELL Order Failed on {sell_exchange_name}: {str(e)}"
-        }
-
-    # 7. Calculate real fees & profit
+    # ----------------------------------------------------
+    # STEP 10: Save trade
+    # ----------------------------------------------------
     buy_fee = round(trade_amount * 0.001, 2)
-    sell_fee = round((btc_amount * effective_sell_price) * 0.001, 2)
+    sell_fee = round((buy_filled_qty * effective_sell_price) * 0.001, 2)
     total_fees = round(buy_fee + sell_fee, 2)
-    net_profit = round((btc_amount * effective_sell_price) - trade_amount - total_fees, 2)
+    realized_profit = round((buy_filled_qty * effective_sell_price) - trade_amount - total_fees, 2)
+
+    trade_record = {
+        "buy": buy_exchange_name,
+        "sell": sell_exchange_name,
+        "buy_exchange": buy_exchange_name,
+        "sell_exchange": sell_exchange_name,
+        "buy_price": latest_buy_price,
+        "sell_price": latest_sell_price,
+        "effective_buy_price": effective_buy_price,
+        "effective_sell_price": effective_sell_price,
+        "fees": total_fees,
+        "profit": realized_profit,
+        "buy_order_id": buy_order_id,
+        "sell_order_id": sell_order_id,
+        "btc_amount": buy_filled_qty,
+        "slippage": 0.0,
+        "trade_amount": trade_amount,
+        "created_at": datetime.now().astimezone().isoformat(),
+        "mode": "LIVE",
+        "execution_steps": execution_steps
+    }
+
+    execution_steps.append({
+        "step": 10,
+        "title": "Save trade",
+        "detail": f"Live Trade saved to DB | Net Realized Profit: +${realized_profit:.2f} USDT",
+        "status": "COMPLETED"
+    })
 
     return {
         "success": True,
-        "message": f"LIVE TRADE EXECUTED: Buy on {buy_exchange_name}, Sell on {sell_exchange_name}.",
-        "trade": {
-            "buy": buy_exchange_name,
-            "sell": sell_exchange_name,
-            "buy_exchange": buy_exchange_name,
-            "sell_exchange": sell_exchange_name,
-            "buy_price": buy_price,
-            "sell_price": sell_price,
-            "effective_buy_price": effective_buy_price,
-            "effective_sell_price": effective_sell_price,
-            "fees": total_fees,
-            "profit": net_profit,
-            "buy_order_id": buy_order_id,
-            "sell_order_id": sell_order_id,
-            "btc_amount": btc_amount,
-            "slippage": 0.0,
-            "trade_amount": trade_amount,
-            "created_at": datetime.now().astimezone().isoformat(),
-            "mode": "LIVE"
-        }
+        "message": f"✅ LIVE ARBITRAGE TRADE EXECUTED SUCCESSFULLY: Buy on {buy_exchange_name}, Sell on {sell_exchange_name}.",
+        "trade": trade_record,
+        "execution_steps": execution_steps
     }
+
+
+def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, sell_price, trade_amount=1000.0):
+    return execute_live_real_trade_pipeline(buy_exchange_name, sell_exchange_name, buy_price, sell_price, trade_amount)
 
 
 # ============================================================

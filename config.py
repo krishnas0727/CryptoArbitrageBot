@@ -30,14 +30,14 @@ TRANSFER_FEE = 0.00
 # AUTO TRADE
 # ==========================================
 
-# True  = Automatic paper trading ON
-# False = Automatic paper trading OFF
+# True  = Automatic live real trading ON
+# False = Automatic live real trading OFF
 
 AUTO_TRADE_ENABLED = True
 
 
 # Minimum net profit required
-# before automatic paper trade
+# before automatic live trade
 
 MIN_PROFIT = 0.01
 AUTO_TRADE_COOLDOWN = 5

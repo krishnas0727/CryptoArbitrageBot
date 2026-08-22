@@ -1390,7 +1390,7 @@ async function saveBotSettings() {
     const cooldownVal = Number(document.getElementById("autoCooldown") ? document.getElementById("autoCooldown").value : 30);
     const slippagePctVal = Number(document.getElementById("slippagePct") ? document.getElementById("slippagePct").value : 0.05);
     const autoChecked = document.getElementById("autoTrade").checked;
-    const modeVal = document.getElementById("tradingModeSelect") ? document.getElementById("tradingModeSelect").value : "PAPER";
+    const modeVal = document.getElementById("tradingModeSelect") ? document.getElementById("tradingModeSelect").value : "LIVE";
     const symbolVal = document.getElementById("tradingSymbolSelect") ? document.getElementById("tradingSymbolSelect").value : "BTC/USDT";
     const slipChecked = document.getElementById("slippageToggle") ? document.getElementById("slippageToggle").checked : true;
     const msg = document.getElementById("saveMessage");

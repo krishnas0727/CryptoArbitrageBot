@@ -97,7 +97,7 @@ def create_database():
         ("btc_amount", "REAL DEFAULT 0.0"),
         ("slippage", "REAL DEFAULT 0.0"),
         ("trade_amount", "REAL DEFAULT 0.0"),
-        ("mode", "TEXT DEFAULT 'PAPER'")
+        ("mode", "TEXT DEFAULT 'LIVE'")
     ]:
         if col not in columns:
             cursor.execute(f"ALTER TABLE trades ADD COLUMN {col} {col_type}")
@@ -185,7 +185,7 @@ def restore_trades_from_json_backup():
                         float(trade.get("btc_amount", 0.0)),
                         float(trade.get("slippage", 0.0)),
                         float(trade.get("trade_amount", 0.0)),
-                        trade.get("mode", "PAPER"),
+                        trade.get("mode", "LIVE"),
                         trade.get("created_at") or datetime.now().astimezone().isoformat()
                     ))
                 conn.commit()
@@ -404,7 +404,7 @@ def save_trade(trade):
         float(trade.get("btc_amount", 0.0)),
         float(trade.get("slippage", 0.0)),
         float(trade.get("trade_amount", 0.0)),
-        trade.get("mode", "PAPER"),
+        trade.get("mode", "LIVE"),
         created_at_str
     ))
 
@@ -439,7 +439,7 @@ def get_all_trades():
             btc_amount,
             slippage,
             trade_amount,
-            COALESCE(mode, 'PAPER') AS mode,
+            COALESCE(mode, 'LIVE') AS mode,
             created_at
         FROM trades
         ORDER BY id DESC
@@ -477,7 +477,7 @@ def get_latest_trade():
             btc_amount,
             slippage,
             trade_amount,
-            COALESCE(mode, 'PAPER') AS mode,
+            COALESCE(mode, 'LIVE') AS mode,
             created_at
         FROM trades
         ORDER BY id DESC

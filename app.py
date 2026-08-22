@@ -14,7 +14,7 @@ import config
 
 from arbitrage import (
     analyze_market,
-    execute_paper_trade
+    execute_live_trade
 )
 
 from database import (
@@ -56,7 +56,7 @@ def start_background_auto_trader():
                 if getattr(config, "AUTO_TRADE_ENABLED", False) is True:
                     data = analyze_market()
                     if data and data.get("net_profit", 0) >= getattr(config, "MIN_PROFIT", 0.01):
-                        res = execute_paper_trade(data)
+                        res = execute_live_trade(data)
                         if res and res.get("success"):
                             last_background_trade_result = res
             except Exception:
@@ -153,7 +153,7 @@ def manual_trade_api():
             "message": "Unable to fetch live prices for execution."
         }), 503
 
-    result = execute_paper_trade(market_data, custom_amount=custom_amount, is_manual=True)
+    result = execute_live_trade(market_data, custom_amount=custom_amount, is_manual=True)
 
     if result.get("success"):
         return jsonify({
@@ -185,7 +185,7 @@ def get_settings():
             "slippage_pct": getattr(config, "SLIPPAGE_PCT", 0.05),
             "cooldown": getattr(config, "AUTO_TRADE_COOLDOWN", 30),
             "symbol": getattr(config, "SYMBOL", "BTC/USDT"),
-            "trading_mode": getattr(config, "TRADING_MODE", "PAPER")
+            "trading_mode": getattr(config, "TRADING_MODE", "LIVE")
         }
     })
 
@@ -393,7 +393,7 @@ def market_data():
 
             "min_profit": config.MIN_PROFIT,
 
-            "trading_mode": getattr(config, "TRADING_MODE", "PAPER")
+            "trading_mode": getattr(config, "TRADING_MODE", "LIVE")
 
         },
 
@@ -427,7 +427,7 @@ def clear_trades_api():
     reset_portfolio()
     return jsonify({
         "success": True,
-        "message": "All trade history log cleared and paper balance reset successfully."
+        "message": "All trade history log cleared successfully."
     })
 
 
