@@ -86,8 +86,13 @@ if proxy_url:
         else:
             opts["httpsProxy"] = proxy_url
 
+try:
+    ex_binance = ccxt.binanceus(binance_opts)
+except Exception:
+    ex_binance = ccxt.binance(binance_opts)
+
 exchanges = {
-    "Binance": ccxt.binance(binance_opts),
+    "Binance": ex_binance,
     "Bybit": ccxt.bybit(bybit_opts),
     "Coinbase": ccxt.coinbase(coinbase_opts)
 }
@@ -146,10 +151,25 @@ def get_authenticated_exchange(name):
                 config_opts["httpsProxy"] = proxy_url
 
         if name.lower() == "binance":
+            binance_url = os.environ.get("BINANCE_API_URL", "https://api.binance.us")
+            if "binance.us" in binance_url.lower() or os.environ.get("USE_BINANCE_US", "1") == "1":
+                exchange_class = getattr(ccxt, "binanceus", exchange_class)
+
             config_opts["urls"] = {
+                "logo": "https://user-images.githubusercontent.com/1294454/29604884-59442656-8730-11e7-9404-22e0523b283d.jpg",
                 "api": {
-                    "public": os.environ.get("BINANCE_API_URL", "https://api.binance.us/api/v3"),
-                    "private": os.environ.get("BINANCE_API_URL", "https://api.binance.us/api/v3")
+                    "web": f"{binance_url}/api/v3",
+                    "wapi": f"{binance_url}/api/v3",
+                    "sapi": f"{binance_url}/api/v3",
+                    "sapiV2": f"{binance_url}/api/v3",
+                    "sapiV3": f"{binance_url}/api/v3",
+                    "sapiV4": f"{binance_url}/api/v3",
+                    "fapi": f"{binance_url}/api/v3",
+                    "dapi": f"{binance_url}/api/v3",
+                    "public": f"{binance_url}/api/v3",
+                    "private": f"{binance_url}/api/v3",
+                    "v1": f"{binance_url}/api/v3",
+                    "v3": f"{binance_url}/api/v3"
                 }
             }
 
