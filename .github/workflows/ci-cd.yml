@@ -1,0 +1,55 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Build & Test (CI)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Test Python Modules Import
+      run: |
+        python -c "import database, exchange, arbitrage, app; print('✅ All modules imported cleanly!')"
+
+    - name: Verify Web Dashboard Routes
+      run: |
+        python -c "from app import app; client = app.test_client(); res = client.get('/'); assert res.status_code == 200; print('✅ Web App HTTP 200 OK')"
+
+  deploy:
+    name: Deploy to PythonAnywhere (CD)
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger PythonAnywhere Web App Reload
+      env:
+        PYTHONANYWHERE_TOKEN: ${{ secrets.PYTHONANYWHERE_TOKEN }}
+        PYTHONANYWHERE_DOMAIN: cryptoarbitragebot.pythonanywhere.com
+      run: |
+        if [ -n "$PYTHONANYWHERE_TOKEN" ]; then
+          echo "🚀 Triggering PythonAnywhere web app reload..."
+          curl -X POST "https://www.pythonanywhere.com/api/v0/user/cryptoarbitragebot/webapps/$PYTHONANYWHERE_DOMAIN/reload/" \
+            -H "Authorization: Token $PYTHONANYWHERE_TOKEN"
+          echo "✅ PythonAnywhere deployment triggered successfully!"
+        else
+          echo "ℹ️ PYTHONANYWHERE_TOKEN secret not configured in GitHub Secrets yet. Skipping automated webhook reload."
+        fi
