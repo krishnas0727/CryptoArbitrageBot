@@ -151,25 +151,29 @@ def get_authenticated_exchange(name):
                 config_opts["httpsProxy"] = proxy_url
 
         if name.lower() == "binance":
-            binance_url = os.environ.get("BINANCE_API_URL", "https://api.binance.us")
-            if "binance.us" in binance_url.lower() or os.environ.get("USE_BINANCE_US", "1") == "1":
+            binance_url = os.environ.get("BINANCE_API_URL", "")
+            use_us = os.environ.get("USE_BINANCE_US", "").strip() == "1" or "binance.us" in binance_url.lower()
+            if use_us:
                 exchange_class = getattr(ccxt, "binanceus", exchange_class)
+                binance_target = "https://api.binance.us"
+            else:
+                binance_target = "https://api.binance.com"
 
             config_opts["urls"] = {
                 "logo": "https://user-images.githubusercontent.com/1294454/29604884-59442656-8730-11e7-9404-22e0523b283d.jpg",
                 "api": {
-                    "web": f"{binance_url}/api/v3",
-                    "wapi": f"{binance_url}/api/v3",
-                    "sapi": f"{binance_url}/api/v3",
-                    "sapiV2": f"{binance_url}/api/v3",
-                    "sapiV3": f"{binance_url}/api/v3",
-                    "sapiV4": f"{binance_url}/api/v3",
-                    "fapi": f"{binance_url}/api/v3",
-                    "dapi": f"{binance_url}/api/v3",
-                    "public": f"{binance_url}/api/v3",
-                    "private": f"{binance_url}/api/v3",
-                    "v1": f"{binance_url}/api/v3",
-                    "v3": f"{binance_url}/api/v3"
+                    "web": f"{binance_target}/api/v3",
+                    "wapi": f"{binance_target}/api/v3",
+                    "sapi": f"{binance_target}/api/v3",
+                    "sapiV2": f"{binance_target}/api/v3",
+                    "sapiV3": f"{binance_target}/api/v3",
+                    "sapiV4": f"{binance_target}/api/v3",
+                    "fapi": f"{binance_target}/api/v3",
+                    "dapi": f"{binance_target}/api/v3",
+                    "public": f"{binance_target}/api/v3",
+                    "private": f"{binance_target}/api/v3",
+                    "v1": f"{binance_target}/api/v3",
+                    "v3": f"{binance_target}/api/v3"
                 }
             }
 
@@ -218,13 +222,6 @@ def test_exchange_connection(name):
             "message": err
         }
 
-    proxy_url = os.environ.get("EXCHANGE_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
-    if proxy_url:
-        clean_proxy = proxy_url.split('@')[-1] if '@' in proxy_url else proxy_url
-        proxy_status = f" [Proxy Active: {clean_proxy}]"
-    else:
-        proxy_status = " [Proxy Active: NO (EXCHANGE_PROXY Env Var missing on Render)]"
-
     try:
         if hasattr(ex_instance, "load_time_difference"):
             try:
@@ -254,12 +251,52 @@ def test_exchange_connection(name):
 
             return {
                 "success": True,
-                "message": f"🟢 Connected! Balance: ${round(float(usdt_free or 4.73), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC",
-                "usdt_balance": round(float(usdt_free or 4.73), 2),
-                "btc_balance": round(float(btc_free or 0.0), 6)
+                "message": f"🟢 Connected! Balance: ${round(float(usdt_free), 2)} USDT | {round(float(btc_free), 6)} BTC",
+                "usdt_balance": round(float(usdt_free), 2),
+                "btc_balance": round(float(btc_free), 6)
             }
 
-        balance = ex_instance.fetch_balance()
+        # For Binance and other exchanges
+        try:
+            balance = ex_instance.fetch_balance()
+        except (ccxt.AuthenticationError, ccxt.ExchangeError) as e_primary:
+            # Dual-domain fallback for Binance: If Binance.com failed, attempt Binance.US (and vice-versa)
+            if name.lower() == "binance":
+                try:
+                    key_info = get_api_key("Binance")
+                    if key_info and key_info.get("api_key"):
+                        alt_class = ccxt.binanceus if ex_instance.id != "binanceus" else ccxt.binance
+                        ex_alt = alt_class({
+                            "apiKey": str(key_info["api_key"]).strip(),
+                            "secret": str(key_info["api_secret"]).strip(),
+                            "enableRateLimit": True,
+                            "timeout": 20000,
+                            "options": {"defaultType": "spot", "fetchCurrencies": False}
+                        })
+                        balance = ex_alt.fetch_balance()
+                        usdt_free = (
+                            balance.get("free", {}).get("USDT") or
+                            balance.get("free", {}).get("USD") or
+                            balance.get("total", {}).get("USDT") or 0.0
+                        )
+                        btc_free = (
+                            balance.get("free", {}).get("BTC") or
+                            balance.get("total", {}).get("BTC") or 0.0
+                        )
+                        region_label = "Binance US" if alt_class == ccxt.binanceus else "Binance Global"
+                        return {
+                            "success": True,
+                            "message": f"🟢 Connected ({region_label})! Balance: ${round(float(usdt_free), 2)} USDT | {round(float(btc_free), 6)} BTC",
+                            "usdt_balance": round(float(usdt_free), 2),
+                            "btc_balance": round(float(btc_free), 6)
+                        }
+                except Exception:
+                    pass
+
+            return {
+                "success": False,
+                "message": f"🔑 Invalid API Key or Secret for {name}. Please check: 1) Key & Secret correctness, 2) Enable Reading & Enable Spot Trading permissions on Binance, and 3) IP Restrictions."
+            }
 
         usdt_free = (
             balance.get("free", {}).get("USDT") or
@@ -274,34 +311,15 @@ def test_exchange_connection(name):
 
         return {
             "success": True,
-            "message": f"🟢 Connected! Balance: ${round(float(usdt_free or 0.0), 2)} USDT | {round(float(btc_free or 0.0), 6)} BTC",
-            "usdt_balance": round(float(usdt_free or 0.0), 2),
-            "btc_balance": round(float(btc_free or 0.0), 6)
+            "message": f"🟢 Connected! Balance: ${round(float(usdt_free), 2)} USDT | {round(float(btc_free), 6)} BTC",
+            "usdt_balance": round(float(usdt_free), 2),
+            "btc_balance": round(float(btc_free), 6)
         }
-    except ccxt.AuthenticationError as e:
-        return {
-            "success": False,
-            "message": f"🔑 Invalid API Key or Secret for {name}."
-        }
-    except ccxt.PermissionDenied as e:
-        return {
-            "success": True,
-            "message": f"🟢 Connected! Balance: $4.63 USDT | 0.0 BTC",
-            "usdt_balance": 4.63,
-            "btc_balance": 0.0
-        }
+
     except Exception as e:
         return {
-            "success": True,
-            "message": f"🟢 Connected! Balance: $4.63 USDT | 0.0 BTC",
-            "usdt_balance": 4.63,
-            "btc_balance": 0.0
-        }
-        if not clean_msg or len(clean_msg) > 100:
-            clean_msg = f"{name} API Connection Issue"
-        return {
             "success": False,
-            "message": f"❌ {clean_msg}"
+            "message": f"❌ Connection Error for {name}: {str(e)}"
         }
 
 
