@@ -155,27 +155,6 @@ def get_authenticated_exchange(name):
             use_us = os.environ.get("USE_BINANCE_US", "").strip() == "1" or "binance.us" in binance_url.lower()
             if use_us:
                 exchange_class = getattr(ccxt, "binanceus", exchange_class)
-                binance_target = "https://api.binance.us"
-            else:
-                binance_target = "https://api.binance.com"
-
-            config_opts["urls"] = {
-                "logo": "https://user-images.githubusercontent.com/1294454/29604884-59442656-8730-11e7-9404-22e0523b283d.jpg",
-                "api": {
-                    "web": f"{binance_target}/api/v3",
-                    "wapi": f"{binance_target}/api/v3",
-                    "sapi": f"{binance_target}/api/v3",
-                    "sapiV2": f"{binance_target}/api/v3",
-                    "sapiV3": f"{binance_target}/api/v3",
-                    "sapiV4": f"{binance_target}/api/v3",
-                    "fapi": f"{binance_target}/api/v3",
-                    "dapi": f"{binance_target}/api/v3",
-                    "public": f"{binance_target}/api/v3",
-                    "private": f"{binance_target}/api/v3",
-                    "v1": f"{binance_target}/api/v3",
-                    "v3": f"{binance_target}/api/v3"
-                }
-            }
 
         if name.lower() == "bybit":
             config_opts["hostname"] = os.environ.get("BYBIT_HOSTNAME", "bytick.com")
