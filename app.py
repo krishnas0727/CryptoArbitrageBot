@@ -41,13 +41,14 @@ app = Flask(__name__)
 create_database()
 
 
-# =====================================================
-# AUTO TRADE CONTROL & BACKGROUND WORKER
-# =====================================================
-
-last_background_trade_result = None
+_auto_trader_started = False
 
 def start_background_auto_trader():
+    global _auto_trader_started
+    if _auto_trader_started:
+        return
+    _auto_trader_started = True
+
     def auto_trader_loop():
         global last_background_trade_result
         print("🤖 Background Auto-Trader Thread Started...", flush=True)
