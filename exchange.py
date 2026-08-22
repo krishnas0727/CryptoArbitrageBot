@@ -58,7 +58,7 @@ bybit_opts = {
     "options": {
         "defaultType": "spot",
         "recvWindow": 60000,
-        "adjustForTimeDifference": True,
+        "adjustForTimeDifference": False,
         "fetchCurrencies": False
     }
 }
@@ -87,6 +87,7 @@ if "Bybit" in exchanges:
     if hasattr(exchanges["Bybit"], "has"):
         exchanges["Bybit"].has["fetchCurrencies"] = False
     exchanges["Bybit"].fetch_currencies = lambda *args, **kwargs: {}
+    exchanges["Bybit"].fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
 
 if proxy_url:
     for ex in exchanges.values():
@@ -117,7 +118,7 @@ def get_authenticated_exchange(name):
             "timeout": 20000,
             "options": {
                 "recvWindow": 60000,
-                "adjustForTimeDifference": True,
+                "adjustForTimeDifference": False,
                 "createMarketBuyOrderRequiresPrice": False
             }
         }
@@ -135,6 +136,7 @@ def get_authenticated_exchange(name):
         if name.lower() == "bybit":
             config_opts["options"]["defaultType"] = "spot"
             config_opts["options"]["fetchCurrencies"] = False
+            config_opts["options"]["adjustForTimeDifference"] = False
             config_opts["hostname"] = os.environ.get("BYBIT_HOSTNAME", "bytick.com")
             config_opts["urls"] = {
                 "api": {
@@ -151,6 +153,7 @@ def get_authenticated_exchange(name):
             if hasattr(ex_instance, "has"):
                 ex_instance.has["fetchCurrencies"] = False
             ex_instance.fetch_currencies = lambda *args, **kwargs: {}
+            ex_instance.fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
 
         if proxy_url and hasattr(ex_instance, "session"):
             try:
