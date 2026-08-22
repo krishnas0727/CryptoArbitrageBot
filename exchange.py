@@ -88,6 +88,7 @@ if "Bybit" in exchanges:
         exchanges["Bybit"].has["fetchCurrencies"] = False
     exchanges["Bybit"].fetch_currencies = lambda *args, **kwargs: {}
     exchanges["Bybit"].fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
+    exchanges["Bybit"].timeDifference = 0
 
 if proxy_url:
     for ex in exchanges.values():
@@ -154,6 +155,7 @@ def get_authenticated_exchange(name):
                 ex_instance.has["fetchCurrencies"] = False
             ex_instance.fetch_currencies = lambda *args, **kwargs: {}
             ex_instance.fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
+            ex_instance.timeDifference = 0
 
         if proxy_url and hasattr(ex_instance, "session"):
             try:
@@ -161,7 +163,7 @@ def get_authenticated_exchange(name):
             except Exception:
                 pass
 
-        if hasattr(ex_instance, "load_time_difference"):
+        if name.lower() != "bybit" and hasattr(ex_instance, "load_time_difference"):
             try:
                 ex_instance.load_time_difference()
             except Exception:
