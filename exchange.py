@@ -38,8 +38,10 @@ binance_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
     "options": {
+        "defaultType": "spot",
         "recvWindow": 60000,
-        "adjustForTimeDifference": True
+        "adjustForTimeDifference": False,
+        "fetchCurrencies": False
     }
 }
 bybit_opts = {
@@ -83,12 +85,13 @@ exchanges = {
     "Bybit": ccxt.bybit(bybit_opts),
     "Coinbase": ccxt.coinbase(coinbase_opts)
 }
-if "Bybit" in exchanges:
-    if hasattr(exchanges["Bybit"], "has"):
-        exchanges["Bybit"].has["fetchCurrencies"] = False
-    exchanges["Bybit"].fetch_currencies = lambda *args, **kwargs: {}
-    exchanges["Bybit"].fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
-    exchanges["Bybit"].timeDifference = 0
+for ex_name in ["Binance", "Bybit"]:
+    if ex_name in exchanges:
+        if hasattr(exchanges[ex_name], "has"):
+            exchanges[ex_name].has["fetchCurrencies"] = False
+        exchanges[ex_name].fetch_currencies = lambda *args, **kwargs: {}
+        exchanges[ex_name].fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
+        exchanges[ex_name].timeDifference = 0
 
 if proxy_url:
     for ex in exchanges.values():
@@ -118,8 +121,10 @@ def get_authenticated_exchange(name):
             "enableRateLimit": True,
             "timeout": 20000,
             "options": {
+                "defaultType": "spot",
                 "recvWindow": 60000,
                 "adjustForTimeDifference": False,
+                "fetchCurrencies": False,
                 "createMarketBuyOrderRequiresPrice": False
             }
         }
@@ -135,9 +140,6 @@ def get_authenticated_exchange(name):
                 config_opts["httpsProxy"] = proxy_url
 
         if name.lower() == "bybit":
-            config_opts["options"]["defaultType"] = "spot"
-            config_opts["options"]["fetchCurrencies"] = False
-            config_opts["options"]["adjustForTimeDifference"] = False
             config_opts["hostname"] = os.environ.get("BYBIT_HOSTNAME", "bytick.com")
             config_opts["urls"] = {
                 "api": {
@@ -150,22 +152,17 @@ def get_authenticated_exchange(name):
             }
 
         ex_instance = exchange_class(config_opts)
-        if name.lower() == "bybit":
-            if hasattr(ex_instance, "has"):
-                ex_instance.has["fetchCurrencies"] = False
-            ex_instance.fetch_currencies = lambda *args, **kwargs: {}
-            ex_instance.fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
-            ex_instance.timeDifference = 0
+
+        # Global safety overrides for all exchanges (prevents unneeded network calls during order placement)
+        if hasattr(ex_instance, "has"):
+            ex_instance.has["fetchCurrencies"] = False
+        ex_instance.fetch_currencies = lambda *args, **kwargs: {}
+        ex_instance.fetch_time = lambda *args, **kwargs: int(time.time() * 1000)
+        ex_instance.timeDifference = 0
 
         if proxy_url and hasattr(ex_instance, "session"):
             try:
                 ex_instance.session.proxies = {"http": proxy_url, "https": proxy_url}
-            except Exception:
-                pass
-
-        if name.lower() != "bybit" and hasattr(ex_instance, "load_time_difference"):
-            try:
-                ex_instance.load_time_difference()
             except Exception:
                 pass
 
