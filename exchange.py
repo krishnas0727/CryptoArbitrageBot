@@ -103,7 +103,7 @@ if proxy_url:
 def get_authenticated_exchange(name):
     key_info = get_api_key(name)
     if not key_info or not key_info.get("api_key") or not key_info.get("api_secret"):
-        return None, f"No API keys configured for {name}."
+        return None, f"🔑 API Keys Required: Please enter your {name} API Key & Secret in the Settings page to execute live real trades."
 
     exchange_class = getattr(ccxt, name.lower(), None)
     if not exchange_class:

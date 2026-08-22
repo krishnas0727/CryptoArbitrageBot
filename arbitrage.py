@@ -27,16 +27,29 @@ def analyze_market():
     if not prices or len(prices) < 2:
         return None
 
+    # Filter to active configured exchanges if user added API keys
+    try:
+        from database import get_all_api_keys
+        keys = get_all_api_keys()
+        active_exchanges = [k["exchange"].capitalize() for k in keys if k.get("is_active") and k.get("exchange")]
+        configured_prices = {k: v for k, v in prices.items() if k in active_exchanges}
+        if configured_prices and len(configured_prices) >= 2:
+            valid_prices = configured_prices
+        else:
+            valid_prices = prices
+    except Exception:
+        valid_prices = prices
+
     # Lowest price = BUY
     buy_exchange = min(
-        prices,
-        key=prices.get
+        valid_prices,
+        key=valid_prices.get
     )
 
     # Highest price = SELL
     sell_exchange = max(
-        prices,
-        key=prices.get
+        valid_prices,
+        key=valid_prices.get
     )
 
     buy_price = prices[buy_exchange]
