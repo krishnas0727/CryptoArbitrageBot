@@ -45,13 +45,22 @@ binance_opts = {
 bybit_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
+    "hostname": os.environ.get("BYBIT_HOSTNAME", "bytick.com"),
     "options": {
         "defaultType": "spot",
         "recvWindow": 60000,
-        "adjustForTimeDifference": True
+        "adjustForTimeDifference": True,
+        "fetchCurrencies": False
     }
 }
-coinbase_opts = {"enableRateLimit": True, "timeout": 20000}
+coinbase_opts = {
+    "enableRateLimit": True,
+    "timeout": 20000,
+    "options": {
+        "createMarketBuyOrderRequiresPrice": False,
+        "defaultType": "spot"
+    }
+}
 
 if proxy_url:
     for opts in (binance_opts, bybit_opts, coinbase_opts):
@@ -65,6 +74,8 @@ exchanges = {
     "Bybit": ccxt.bybit(bybit_opts),
     "Coinbase": ccxt.coinbase(coinbase_opts)
 }
+if "Bybit" in exchanges and hasattr(exchanges["Bybit"], "has"):
+    exchanges["Bybit"].has["fetchCurrencies"] = False
 
 if proxy_url:
     for ex in exchanges.values():
@@ -95,7 +106,8 @@ def get_authenticated_exchange(name):
             "timeout": 20000,
             "options": {
                 "recvWindow": 60000,
-                "adjustForTimeDifference": True
+                "adjustForTimeDifference": True,
+                "createMarketBuyOrderRequiresPrice": False
             }
         }
 
@@ -111,8 +123,13 @@ def get_authenticated_exchange(name):
 
         if name.lower() == "bybit":
             config_opts["options"]["defaultType"] = "spot"
+            config_opts["options"]["fetchCurrencies"] = False
+            config_opts["hostname"] = os.environ.get("BYBIT_HOSTNAME", "bytick.com")
 
         ex_instance = exchange_class(config_opts)
+        if hasattr(ex_instance, "has"):
+            ex_instance.has["fetchCurrencies"] = False
+
         if proxy_url and hasattr(ex_instance, "session"):
             try:
                 ex_instance.session.proxies = {"http": proxy_url, "https": proxy_url}
@@ -446,15 +463,26 @@ def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, se
     # 5. Place BUY Order on Buy Exchange
     try:
         print(f"🚀 Submitting REAL BUY order on {buy_exchange_name} for {btc_amount} BTC...")
-        buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_amount)
+        try:
+            buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_amount, buy_price)
+        except Exception as e_inner:
+            if "CloudFront" in str(e_inner) or "403" in str(e_inner):
+                raise e_inner
+            buy_order = buy_ex.create_market_buy_order(SYMBOL, btc_amount)
         buy_order_id = buy_order.get("id") or f"LIVE-BUY-{int(time.time())}"
         effective_buy_price = float(buy_order.get("price") or buy_price)
     except ccxt.InsufficientFunds as e:
         return {"success": False, "message": f"Insufficient funds on {buy_exchange_name}: {str(e)}"}
     except ccxt.ExchangeError as e:
-        return {"success": False, "message": f"Exchange error on {buy_exchange_name}: {str(e)}"}
+        err_msg = str(e)
+        if "CloudFront" in err_msg or "403" in err_msg or "country" in err_msg:
+            return {"success": False, "message": f"Bybit 403 Forbidden / CloudFront Geo-Block: {err_msg}. Access is blocked from your server region. Set EXCHANGE_PROXY or BYBIT_HOSTNAME=bytick.com."}
+        return {"success": False, "message": f"Exchange error on {buy_exchange_name}: {err_msg}"}
     except Exception as e:
-        return {"success": False, "message": f"Failed to execute BUY order on {buy_exchange_name}: {str(e)}"}
+        err_msg = str(e)
+        if "CloudFront" in err_msg or "403" in err_msg or "country" in err_msg:
+            return {"success": False, "message": f"Bybit 403 Forbidden / CloudFront Geo-Block: {err_msg}. Access is blocked from your server region. Set EXCHANGE_PROXY or BYBIT_HOSTNAME=bytick.com."}
+        return {"success": False, "message": f"Failed to execute BUY order on {buy_exchange_name}: {err_msg}"}
 
     # 6. Place SELL Order on Sell Exchange
     try:
