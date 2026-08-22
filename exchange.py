@@ -37,6 +37,12 @@ if proxy_url:
 binance_opts = {
     "enableRateLimit": True,
     "timeout": 20000,
+    "urls": {
+        "api": {
+            "public": os.environ.get("BINANCE_API_URL", "https://api.binance.us/api/v3"),
+            "private": os.environ.get("BINANCE_API_URL", "https://api.binance.us/api/v3")
+        }
+    },
     "options": {
         "defaultType": "spot",
         "recvWindow": 60000,
@@ -138,6 +144,14 @@ def get_authenticated_exchange(name):
                 config_opts["socksProxy"] = proxy_url
             else:
                 config_opts["httpsProxy"] = proxy_url
+
+        if name.lower() == "binance":
+            config_opts["urls"] = {
+                "api": {
+                    "public": os.environ.get("BINANCE_API_URL", "https://api.binance.us/api/v3"),
+                    "private": os.environ.get("BINANCE_API_URL", "https://api.binance.us/api/v3")
+                }
+            }
 
         if name.lower() == "bybit":
             config_opts["hostname"] = os.environ.get("BYBIT_HOSTNAME", "bytick.com")
@@ -501,11 +515,15 @@ def execute_live_real_trade(buy_exchange_name, sell_exchange_name, buy_price, se
         return {"success": False, "message": f"Insufficient funds on {buy_exchange_name}: {str(e)}"}
     except ccxt.ExchangeError as e:
         err_msg = str(e)
+        if "451" in err_msg or "exchangeInfo" in err_msg or "Legal" in err_msg:
+            return {"success": False, "message": f"Binance Geo-Restriction (HTTP 451): api.binance.com is restricted from your server's region. Routed to api.binance.us. Details: {err_msg}"}
         if "CloudFront" in err_msg or "403" in err_msg or "country" in err_msg:
             return {"success": False, "message": f"Bybit 403 Forbidden / CloudFront Geo-Block: {err_msg}. Access is blocked from your server region. Set EXCHANGE_PROXY or BYBIT_HOSTNAME=bytick.com."}
         return {"success": False, "message": f"Exchange error on {buy_exchange_name}: {err_msg}"}
     except Exception as e:
         err_msg = str(e)
+        if "451" in err_msg or "exchangeInfo" in err_msg or "Legal" in err_msg:
+            return {"success": False, "message": f"Binance Geo-Restriction (HTTP 451): api.binance.com is restricted from your server's region. Routed to api.binance.us. Details: {err_msg}"}
         if "CloudFront" in err_msg or "403" in err_msg or "country" in err_msg:
             return {"success": False, "message": f"Bybit 403 Forbidden / CloudFront Geo-Block: {err_msg}. Access is blocked from your server region. Set EXCHANGE_PROXY or BYBIT_HOSTNAME=bytick.com."}
         return {"success": False, "message": f"Failed to execute BUY order on {buy_exchange_name}: {err_msg}"}
