@@ -293,9 +293,12 @@ def test_exchange_connection(name):
                 except Exception:
                     pass
 
+            clean_err = str(e_primary).replace("\n", " ").strip()
+            if len(clean_err) > 160:
+                clean_err = clean_err[:160] + "..."
             return {
                 "success": False,
-                "message": f"🔑 Invalid API Key or Secret for {name}. Please check: 1) Key & Secret correctness, 2) Enable Reading & Enable Spot Trading permissions on Binance, and 3) IP Restrictions."
+                "message": f"🔑 Invalid API Key or Secret for {name}. Details: {clean_err}"
             }
 
         usdt_free = (
