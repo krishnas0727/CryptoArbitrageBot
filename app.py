@@ -51,12 +51,6 @@ def start_background_auto_trader():
 
     def auto_trader_loop():
         global last_background_trade_result
-        try:
-            sys.stdout.write("🤖 Background Auto-Trader Thread Started...\n")
-            sys.stdout.flush()
-        except Exception:
-            pass
-
         while True:
             try:
                 if getattr(config, "AUTO_TRADE_ENABLED", False) is True:
@@ -65,25 +59,17 @@ def start_background_auto_trader():
                         res = execute_paper_trade(data)
                         if res and res.get("success"):
                             last_background_trade_result = res
-                            trade = res.get("trade", {})
-                            try:
-                                sys.stdout.write(f"⚡ [Background Auto-Trader] Executed: {trade.get('buy_exchange')} ➔ {trade.get('sell_exchange')} | Profit: +${trade.get('profit', 0):.2f} USDT\n")
-                                sys.stdout.flush()
-                            except Exception:
-                                pass
-            except Exception as e:
-                try:
-                    sys.stdout.write(f"⚠️ [Background Auto-Trader] Error: {e}\n")
-                    sys.stdout.flush()
-                except Exception:
-                    pass
+            except Exception:
+                pass
 
-            time.sleep(getattr(config, "REFRESH_INTERVAL", 3))
+            time.sleep(getattr(config, "REFRESH_INTERVAL", 5))
 
     thread = threading.Thread(target=auto_trader_loop, daemon=True)
     thread.start()
 
-start_background_auto_trader()
+@app.before_request
+def ensure_auto_trader_running():
+    start_background_auto_trader()
 
 
 # =====================================================

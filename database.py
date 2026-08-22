@@ -10,10 +10,9 @@ from config import DATABASE_NAME, BACKUP_JSON_PATH
 # DATABASE FOLDER
 # ============================================================
 
-os.makedirs(
-    os.path.dirname(DATABASE_NAME),
-    exist_ok=True
-)
+db_dir = os.path.dirname(DATABASE_NAME)
+if db_dir:
+    os.makedirs(db_dir, exist_ok=True)
 
 
 # ============================================================
